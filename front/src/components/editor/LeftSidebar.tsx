@@ -1,18 +1,30 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 
-export function LeftSidebar() {
+interface LeftSidebarProps {
+  isMobile?: boolean;
+  onToggle?: () => void;
+}
+
+export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
   return (
-    <aside className="w-80 flex flex-col bg-bg-sources border-r border-border-bold">
+    <aside className="w-full h-full flex flex-col bg-bg-sources border-r border-border-bold">
       <div className="p-5 flex items-center justify-between border-b border-border-bold bg-bg-sources">
-        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest overflow-hidden whitespace-nowrap text-ellipsis">
           Sources
         </h2>
-        <Button variant="icon" title="Space Dashboard">
-          <span className="material-symbols-outlined icon-sm">
-            space_dashboard
-          </span>
-        </Button>
+        <div className="flex gap-2">
+          {isMobile && (
+            <Button variant="icon" title="Close Sidebar" onClick={onToggle}>
+              <span className="material-symbols-outlined icon-sm">close</span>
+            </Button>
+          )}
+          <Button variant="icon" title="Space Dashboard">
+            <span className="material-symbols-outlined icon-sm">
+              space_dashboard
+            </span>
+          </Button>
+        </div>
       </div>
       <div className="px-5 py-5 space-y-4">
         <button className="w-full py-3 px-4 bg-white border border-dashed border-black shadow-sm hover:shadow-md hover:border-solid hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 text-sm font-bold group text-gray-600 hover:text-black">
@@ -31,14 +43,14 @@ export function LeftSidebar() {
             type="text"
           />
         </div>
-        <div className="flex gap-2 text-xs font-bold">
-          <button className="px-3 py-1.5 bg-black text-white border border-black shadow-hard-sm">
+        <div className="flex gap-2 text-xs font-bold w-full overflow-x-auto pb-1 hide-scrollbar">
+          <button className="px-3 py-1.5 bg-black text-white border border-black shadow-hard-sm shrink-0">
             All
           </button>
-          <button className="px-3 py-1.5 bg-transparent text-gray-600 border border-gray-300 hover:border-black hover:text-black transition-colors">
+          <button className="px-3 py-1.5 bg-transparent text-gray-600 border border-gray-300 hover:border-black hover:text-black transition-colors shrink-0">
             PDF
           </button>
-          <button className="px-3 py-1.5 bg-transparent text-gray-600 border border-gray-300 hover:border-black hover:text-black transition-colors">
+          <button className="px-3 py-1.5 bg-transparent text-gray-600 border border-gray-300 hover:border-black hover:text-black transition-colors shrink-0">
             Web
           </button>
         </div>
@@ -77,7 +89,7 @@ export function LeftSidebar() {
             className={`group flex items-center gap-3 p-3 bg-white shadow-sm cursor-pointer transition-all ${source.active ? "border-l-2 border-l-accent-main border-y border-r border-gray-200 hover:border-black" : "border border-gray-200 hover:border-black"}`}
           >
             <div
-              className={`p-1.5 rounded-sm ${source.active ? "bg-accent-light text-accent-secondary" : "bg-gray-50 text-gray-400 group-hover:text-black transition-colors"}`}
+              className={`p-1.5 rounded-sm shrink-0 ${source.active ? "bg-accent-light text-accent-secondary" : "bg-gray-50 text-gray-400 group-hover:text-black transition-colors"}`}
             >
               <span className="material-symbols-outlined icon-sm">
                 {source.icon}
@@ -94,7 +106,7 @@ export function LeftSidebar() {
               </p>
             </div>
             {source.active && (
-              <div className="w-2 h-2 rounded-full bg-accent-main"></div>
+              <div className="w-2 h-2 rounded-full bg-accent-main shrink-0"></div>
             )}
           </div>
         ))}

@@ -1,10 +1,18 @@
-"use client";
-
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
-export function ChatPanel() {
+interface ChatPanelProps {
+  isMobile?: boolean;
+  onOpenLeft?: () => void;
+  onOpenRight?: () => void;
+}
+
+export function ChatPanel({
+  isMobile,
+  onOpenLeft,
+  onOpenRight,
+}: ChatPanelProps) {
   const markdownContent = `
 These documents mainly explore the integration and application of **Large Language Models (LLM)** and **Agentic** architectures in modern recommendation systems.
 
@@ -26,37 +34,55 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
   `.trim();
 
   return (
-    <section className="flex-1 flex flex-col bg-bg-main relative">
-      <div className="p-5 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+    <section className="flex-1 flex flex-col bg-bg-main relative w-full h-full">
+      <div className="p-4 md:p-5 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm">
+        <div className="flex items-center gap-2 md:gap-3">
+          {isMobile && onOpenLeft && (
+            <button
+              onClick={onOpenLeft}
+              className="p-1 md:hidden hover:bg-black hover:text-white transition-colors border border-transparent mr-2 text-gray-400"
+            >
+              <span className="material-symbols-outlined icon-sm">menu</span>
+            </button>
+          )}
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden sm:block">
             Chat
           </h2>
-          <div className="px-2 py-0.5 bg-accent-light text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm">
+          <div className="px-2 py-0.5 bg-accent-light text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm whitespace-nowrap">
             9 sources active
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="icon" title="Tune">
+          <Button variant="icon" title="Tune" className="hidden sm:inline-flex">
             <span className="material-symbols-outlined icon-sm">tune</span>
           </Button>
-          <Button variant="icon" title="More">
+          <Button variant="icon" title="More" className="hidden sm:inline-flex">
             <span className="material-symbols-outlined icon-sm">
               more_horiz
             </span>
           </Button>
+          {isMobile && onOpenRight && (
+            <button
+              onClick={onOpenRight}
+              className="p-1 md:hidden hover:bg-black hover:text-white transition-colors border border-transparent ml-2 text-gray-400"
+            >
+              <span className="material-symbols-outlined icon-sm">
+                dock_to_left
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 lg:px-16 pt-8 pb-40">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-16 pt-8 pb-40">
         <div className="max-w-3xl mx-auto space-y-12">
           {/* Summary Section */}
           <div className="space-y-6">
-            <div className="flex items-start justify-between border-b border-gray-200 pb-6">
-              <h1 className="text-4xl font-black text-black tracking-tight uppercase leading-none">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-gray-200 pb-6 gap-4">
+              <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight uppercase leading-none">
                 Agentic AI Overview
               </h1>
-              <div className="flex gap-2">
+              <div className="flex gap-2 self-start sm:self-auto">
                 <button
                   className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
                   title="Copy"
@@ -78,7 +104,7 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
 
             <MarkdownRenderer content={markdownContent} />
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-wrap gap-3 pt-4">
               <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
                 Suggest related topics
               </button>
@@ -122,7 +148,7 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
           </div>
 
           <div className="flex justify-end w-full">
-            <div className="bg-gray-100 text-black px-6 py-4 border border-black shadow-hard-sm max-w-[80%]">
+            <div className="bg-gray-100 text-black px-4 sm:px-6 py-4 border border-black shadow-hard-sm max-w-[90%] sm:max-w-[80%]">
               <p className="text-sm font-medium">
                 I expect how to introduce skills and framework design.
               </p>
@@ -130,7 +156,7 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
           </div>
 
           <div className="flex justify-start w-full pb-8">
-            <div className="w-full bg-white border border-black p-8 shadow-hard relative mt-4">
+            <div className="w-full bg-white border border-black p-4 sm:p-8 shadow-hard relative mt-4">
               <div className="absolute -top-3 -left-3 bg-accent-main border border-black px-3 py-1 text-xs font-bold uppercase text-white shadow-sm">
                 AI Response
               </div>
@@ -140,7 +166,7 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-6 bg-linear-to-t from-white via-white/80 to-transparent pt-12">
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-linear-to-t from-white via-white/80 to-transparent pt-12">
         <div className="max-w-3xl mx-auto">
           <div className="bg-white border border-black shadow-hard hover:shadow-hard-hover transition-all flex flex-col relative z-20">
             <textarea
@@ -165,7 +191,7 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
               </button>
             </div>
           </div>
-          <div className="text-center mt-3">
+          <div className="text-center mt-3 hidden sm:block">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               AI may produce inaccurate information
             </p>

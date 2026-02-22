@@ -1,11 +1,9 @@
-import { LeftSidebar } from "@/components/editor/LeftSidebar";
-import { ChatPanel } from "@/components/editor/ChatPanel";
-import { RightSidebar } from "@/components/editor/RightSidebar";
+import { EditorLayout } from "@/components/editor/EditorLayout";
 
 export default function Editor() {
   return (
     <>
-      <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-6 bg-white z-20 relative overflow-hidden">
+      <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-4 sm:px-6 bg-white z-20 relative overflow-hidden">
         <div
           className="absolute top-0 right-0 bottom-0 w-64 pointer-events-none opacity-10"
           style={{
@@ -19,24 +17,24 @@ export default function Editor() {
               auto_awesome
             </span>
           </div>
-          <h1 className="font-bold text-xl tracking-tight uppercase">
+          <h1 className="font-bold text-lg sm:text-xl tracking-tight uppercase truncate">
             Neo Workspace
           </h1>
         </div>
-        <div className="flex items-center gap-3 relative z-10">
-          <button className="flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
+        <div className="flex items-center gap-2 sm:gap-3 relative z-10">
+          <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
             <span className="material-symbols-outlined icon-sm">add</span>
             Notebook
           </button>
-          <div className="h-6 w-px bg-gray-300 mx-2"></div>
+          <div className="hidden sm:block h-6 w-px bg-gray-300 mx-2"></div>
           <button
-            className="w-10 h-10 flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+            className="w-10 h-10 hidden sm:flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
             title="Analytics"
           >
             <span className="material-symbols-outlined icon-sm">analytics</span>
           </button>
           <button
-            className="w-10 h-10 flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+            className="w-10 h-10 hidden sm:flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
             title="Share"
           >
             <span className="material-symbols-outlined icon-sm">share</span>
@@ -47,7 +45,7 @@ export default function Editor() {
           >
             <span className="material-symbols-outlined icon-sm">settings</span>
           </button>
-          <div className="w-10 h-10 border border-black overflow-hidden shadow-hard-sm ml-2">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border border-black overflow-hidden shadow-hard-sm ml-1 sm:ml-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="User Avatar"
@@ -57,11 +55,7 @@ export default function Editor() {
           </div>
         </div>
       </header>
-      <main className="flex-1 flex overflow-hidden">
-        <LeftSidebar />
-        <ChatPanel />
-        <RightSidebar />
-      </main>
+      <EditorLayout />
     </>
   );
 }

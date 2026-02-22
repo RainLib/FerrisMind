@@ -3,24 +3,36 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export function RightSidebar() {
-  const [isExpanded, setIsExpanded] = React.useState(true);
+interface RightSidebarProps {
+  isExpanded?: boolean;
+  onToggle?: () => void;
+  isPanel?: boolean;
+}
 
+export function RightSidebar({
+  isExpanded = true,
+  onToggle,
+  isPanel,
+}: RightSidebarProps) {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-bg-studio border-l border-border-bold relative transition-all duration-300 ease-in-out",
-        isExpanded ? "w-80" : "w-16",
+        "flex flex-col h-full bg-bg-studio border-l border-border-bold relative",
+        !isPanel &&
+          (isExpanded
+            ? "w-80"
+            : "w-16 transition-all duration-300 ease-in-out"),
+        isPanel && "w-full",
       )}
     >
       <div className="p-4 flex items-center justify-between border-b border-border-bold bg-bg-studio">
         {isExpanded && (
-          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap overflow-hidden">
             Studio
           </h2>
         )}
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={onToggle}
           className={cn(
             "text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all p-1",
             !isExpanded && "mx-auto",
@@ -35,13 +47,13 @@ export function RightSidebar() {
 
       <div
         className={cn(
-          "p-4 border-b border-gray-200 bg-stone-50/50",
+          "p-4 border-b border-gray-200 bg-stone-50/50 shrink-0 transition-opacity",
           !isExpanded && "px-2 py-4",
         )}
       >
         <div
           className={cn(
-            "grid gap-3",
+            "grid gap-3 transition-all",
             isExpanded ? "grid-cols-2" : "grid-cols-1",
           )}
         >
@@ -62,12 +74,16 @@ export function RightSidebar() {
                 [AU]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-orange-100 rounded-full shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 flex items-center justify-center bg-white border border-orange-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-orange-500">
                 graphic_eq
               </span>
             </div>
-            {isExpanded && <span className="z-10 text-left pt-1">Audio</span>}
+            {isExpanded && (
+              <span className="z-10 text-left pt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                Audio
+              </span>
+            )}
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-orange-400 opacity-60 group-hover:opacity-100 transition-opacity"></div>
           </button>
 
@@ -88,12 +104,16 @@ export function RightSidebar() {
                 [VI]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-cyan-100 rounded-full shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 flex items-center justify-center bg-white border border-cyan-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-cyan-500">
                 smart_display
               </span>
             </div>
-            {isExpanded && <span className="z-10 text-left pt-1">Video</span>}
+            {isExpanded && (
+              <span className="z-10 text-left pt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                Video
+              </span>
+            )}
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-500 opacity-60 group-hover:opacity-100 transition-opacity"></div>
           </button>
 
@@ -114,12 +134,16 @@ export function RightSidebar() {
                 [BR]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-emerald-100 rounded-full shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 flex items-center justify-center bg-white border border-emerald-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-emerald-600">
                 summarize
               </span>
             </div>
-            {isExpanded && <span className="z-10 text-left pt-1">Brief</span>}
+            {isExpanded && (
+              <span className="z-10 text-left pt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                Brief
+              </span>
+            )}
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 opacity-60 group-hover:opacity-100 transition-opacity"></div>
           </button>
 
@@ -140,12 +164,16 @@ export function RightSidebar() {
                 [CA]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-violet-100 rounded-full shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 flex items-center justify-center bg-white border border-violet-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-violet-600">
                 style
               </span>
             </div>
-            {isExpanded && <span className="z-10 text-left pt-1">Cards</span>}
+            {isExpanded && (
+              <span className="z-10 text-left pt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                Cards
+              </span>
+            )}
             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-violet-600 opacity-60 group-hover:opacity-100 transition-opacity"></div>
           </button>
         </div>
