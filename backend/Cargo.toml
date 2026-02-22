@@ -1,0 +1,55 @@
+[package]
+name = "open_notebook_lm"
+version = "0.1.0"
+edition = "2021"
+description = "Open-source NotebookLM backend built with Rust, GraphQL, and SurrealDB"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP framework
+axum = { version = "0.7", features = ["multipart"] }
+axum-extra = { version = "0.9", features = ["typed-header"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# GraphQL
+async-graphql = { version = "7", features = ["uuid", "chrono", "dataloader"] }
+async-graphql-axum = "7"
+
+# SurrealDB
+surrealdb = { version = "2", features = ["kv-rocksdb"] }
+
+# Authentication
+jsonwebtoken = "9"
+argon2 = "0.5"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Utils
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15"
+thiserror = "2"
+anyhow = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# HTTP client (for LLM API calls)
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Streaming
+futures = "0.3"
+async-stream = "0.3"
+tokio-stream = "0.1"
+
+# SSE
+eventsource-stream = "0.2"
+
+[dev-dependencies]
+tokio-test = "0.4"
