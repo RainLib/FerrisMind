@@ -6,50 +6,54 @@ description = "Open-source NotebookLM backend built with Rust, GraphQL, and Surr
 
 [dependencies]
 # Async runtime
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.43", features = ["full"] }
 
 # HTTP framework
-axum = { version = "0.7", features = ["multipart"] }
-axum-extra = { version = "0.9", features = ["typed-header"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace"] }
+axum = { version = "0.8.1", features = ["multipart", "macros"] }
+axum-extra = { version = "0.10.0", features = ["typed-header", "cookie"] }
+tower = "0.5.3"
+tower-http = { version = "0.6.2", features = ["cors", "trace"] }
 
 # GraphQL
-async-graphql = { version = "7", features = ["uuid", "chrono", "dataloader"] }
-async-graphql-axum = "7"
+async-graphql = { version = "7.0.15", features = ["uuid", "chrono", "dataloader"] }
+async-graphql-axum = "7.0.15"
 
 # SurrealDB
-surrealdb = { version = "2", features = ["kv-rocksdb"] }
+surrealdb = { version = "2.2.1", features = ["kv-rocksdb"] }
 
 # Authentication
-jsonwebtoken = "9"
-argon2 = "0.5"
+jsonwebtoken = "9.3.0"
+argon2 = "0.5.3"
 
 # Serialization
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 # Utils
-uuid = { version = "1", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
-dotenvy = "0.15"
-thiserror = "2"
-anyhow = "1"
+uuid = { version = "1.15", features = ["v4", "serde"] }
+chrono = { version = "0.4.40", features = ["serde"] }
+dotenvy = "0.15.7"
+thiserror = "2.0.12"
+anyhow = "1.0.96"
 
 # Logging
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
 
 # HTTP client (for LLM API calls)
-reqwest = { version = "0.12", features = ["json", "stream"] }
+reqwest = { version = "0.12.12", features = ["json", "stream"] }
 
 # Streaming
-futures = "0.3"
-async-stream = "0.3"
-tokio-stream = "0.1"
+futures = "0.3.31"
+async-stream = "0.3.6"
+tokio-stream = "0.1.17"
+
+# LLM Framework (Rig)
+rig = { package = "rig-core", version = "0.31.0" }
 
 # SSE
-eventsource-stream = "0.2"
+eventsource-stream = "0.2.3"
+async-trait = "0.1.87"
 
 [dev-dependencies]
-tokio-test = "0.4"
+tokio-test = "0.4.4"

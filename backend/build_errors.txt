@@ -1,0 +1,390 @@
+    Checking open_notebook_lm v0.1.0 (/Users/houshuai/project/ai_project/openNotebookLm/backend)
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `rig_core`
+ --> src/llm/rig_client.rs:2:5
+  |
+2 | use rig_core::providers::openai::{Client as OpenAIClient, OpenAICompletionModel};
+  |     ^^^^^^^^ use of unresolved module or unlinked crate `rig_core`
+  |
+  = help: if you wanted to use a crate named `rig_core`, use `cargo add rig_core` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `rig_core`
+  --> src/llm/sse.rs:11:5
+   |
+11 | use rig_core::completion::CompletionModel;
+   |     ^^^^^^^^ use of unresolved module or unlinked crate `rig_core`
+   |
+   = help: if you wanted to use a crate named `rig_core`, use `cargo add rig_core` to add it to your `Cargo.toml`
+
+warning: unused import: `http::StatusCode`
+ --> src/auth/middleware.rs:1:30
+  |
+1 | use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
+  |                              ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::sync::Arc`
+ --> src/llm/rig_client.rs:3:5
+  |
+3 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+error[E0597]: `input.name` does not live long enough
+   --> src/graphql/mutation.rs:164:28
+    |
+150 |           input: CreateNotebookInput,
+    |           ----- binding `input` declared here
+...
+160 |           let records: Vec<NotebookRecord> = db
+    |  ____________________________________________-
+161 | |             .query(
+162 | |                 "CREATE notebook SET name = $name, description = $description, owner = type::thing($owner_id)"
+163 | |             )
+164 | |             .bind(("name", &input.name))
+    | |____________________________^^^^^^^^^^^_- argument requires that `input.name` is borrowed for `'static`
+    |                              |
+    |                              borrowed value does not live long enough
+...
+189 |       }
+    |       - `input.name` dropped here while still borrowed
+
+error[E0597]: `claims.sub` does not live long enough
+   --> src/graphql/mutation.rs:166:32
+    |
+152 |           let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+    |               ------ binding `claims` declared here
+...
+160 |           let records: Vec<NotebookRecord> = db
+    |  ____________________________________________-
+161 | |             .query(
+162 | |                 "CREATE notebook SET name = $name, description = $description, owner = type::thing($owner_id)"
+...   |
+165 | |             .bind(("description", &input.description))
+166 | |             .bind(("owner_id", &claims.sub))
+    | |________________________________^^^^^^^^^^^_- argument requires that `claims.sub` is borrowed for `'static`
+    |                                  |
+    |                                  borrowed value does not live long enough
+...
+189 |       }
+    |       - `claims.sub` dropped here while still borrowed
+
+error[E0597]: `nb_id` does not live long enough
+   --> src/graphql/mutation.rs:184:31
+    |
+177 |           let nb_id = nb.id.as_ref().map(|t| t.to_string()).unwrap_or_default();
+    |               ----- binding `nb_id` declared here
+...
+180 | /         db.query(
+181 | |             "RELATE type::thing($user_id) -> has_access -> type::thing($notebook_id) SET role = 'owner'"
+182 | |         )
+183 | |         .bind(("user_id", &claims.sub))
+184 | |         .bind(("notebook_id", &nb_id))
+    | |_______________________________^^^^^^_- argument requires that `nb_id` is borrowed for `'static`
+    |                                 |
+    |                                 borrowed value does not live long enough
+...
+189 |       }
+    |       - `nb_id` dropped here while still borrowed
+
+error[E0597]: `input.id` does not live long enough
+   --> src/graphql/mutation.rs:220:26
+    |
+195 |           input: UpdateNotebookInput,
+    |           ----- binding `input` declared here
+...
+218 |           let records: Vec<NotebookRecord> = db
+    |  ____________________________________________-
+219 | |             .query(&query)
+220 | |             .bind(("id", &input.id))
+    | |__________________________^^^^^^^^^_- argument requires that `input.id` is borrowed for `'static`
+    |                            |
+    |                            borrowed value does not live long enough
+...
+231 |       }
+    |       - `input.id` dropped here while still borrowed
+
+error[E0597]: `id` does not live long enough
+   --> src/graphql/mutation.rs:243:26
+    |
+234 |       async fn delete_notebook(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    |                                                          -- binding `id` declared here
+...
+242 | /         db.query("UPDATE type::thing($id) SET is_deleted = true, updated_at = time::now()")
+243 | |             .bind(("id", &id))
+    | |__________________________^^^_- argument requires that `id` is borrowed for `'static`
+    |                            |
+    |                            borrowed value does not live long enough
+...
+248 |       }
+    |       - `id` dropped here while still borrowed
+
+error[E0597]: `input.email` does not live long enough
+   --> src/graphql/mutation.rs:269:29
+    |
+251 |       async fn invite_member(&self, ctx: &Context<'_>, input: InviteMemberInput) -> Result<bool> {
+    |                                                        ----- binding `input` declared here
+...
+267 |           let users: Vec<UserRecord> = db
+    |  ______________________________________-
+268 | |             .query("SELECT * FROM user WHERE email = $email")
+269 | |             .bind(("email", &input.email))
+    | |_____________________________^^^^^^^^^^^^_- argument requires that `input.email` is borrowed for `'static`
+    |                               |
+    |                               borrowed value does not live long enough
+...
+314 |       }
+    |       - `input.email` dropped here while still borrowed
+
+error[E0597]: `target_user_id` does not live long enough
+   --> src/graphql/mutation.rs:288:31
+    |
+279 |           let target_user_id = target_user
+    |               -------------- binding `target_user_id` declared here
+...
+286 |           let existing: Vec<AccessRecord> = db
+    |  ___________________________________________-
+287 | |             .query("SELECT * FROM has_access WHERE in = type::thing($user_id) AND out = type::thing($notebook_id)")
+288 | |             .bind(("user_id", &target_user_id))
+    | |_______________________________^^^^^^^^^^^^^^^_- argument requires that `target_user_id` is borrowed for `'static`
+    |                                 |
+    |                                 borrowed value does not live long enough
+...
+314 |       }
+    |       - `target_user_id` dropped here while still borrowed
+
+error[E0597]: `notebook_id` does not live long enough
+   --> src/graphql/mutation.rs:338:35
+    |
+322 |           notebook_id: String,
+    |           ----------- binding `notebook_id` declared here
+...
+334 |           let records: Vec<DocumentRecord> = db
+    |  ____________________________________________-
+335 | |             .query(
+336 | |                 "CREATE document SET notebook = type::thing($notebook_id), filename = $filename, file_type = $file_type, file_size = $fil...
+337 | |             )
+338 | |             .bind(("notebook_id", &notebook_id))
+    | |___________________________________^^^^^^^^^^^^_- argument requires that `notebook_id` is borrowed for `'static`
+    |                                     |
+    |                                     borrowed value does not live long enough
+...
+352 |       }
+    |       - `notebook_id` dropped here while still borrowed
+
+error[E0597]: `filename` does not live long enough
+   --> src/graphql/mutation.rs:339:32
+    |
+323 |           filename: String,
+    |           -------- binding `filename` declared here
+...
+334 |           let records: Vec<DocumentRecord> = db
+    |  ____________________________________________-
+335 | |             .query(
+336 | |                 "CREATE document SET notebook = type::thing($notebook_id), filename = $filename, file_type = $file_type, file_size = $fil...
+...   |
+339 | |             .bind(("filename", &filename))
+    | |________________________________^^^^^^^^^_- argument requires that `filename` is borrowed for `'static`
+    |                                  |
+    |                                  borrowed value does not live long enough
+...
+352 |       }
+    |       - `filename` dropped here while still borrowed
+
+error[E0597]: `file_type` does not live long enough
+   --> src/graphql/mutation.rs:340:33
+    |
+324 |           file_type: String,
+    |           --------- binding `file_type` declared here
+...
+334 |           let records: Vec<DocumentRecord> = db
+    |  ____________________________________________-
+335 | |             .query(
+336 | |                 "CREATE document SET notebook = type::thing($notebook_id), filename = $filename, file_type = $file_type, file_size = $fil...
+...   |
+339 | |             .bind(("filename", &filename))
+340 | |             .bind(("file_type", &file_type))
+    | |_________________________________^^^^^^^^^^_- argument requires that `file_type` is borrowed for `'static`
+    |                                   |
+    |                                   borrowed value does not live long enough
+...
+352 |       }
+    |       - `file_type` dropped here while still borrowed
+
+error[E0597]: `id` does not live long enough
+   --> src/graphql/mutation.rs:362:26
+    |
+355 |       async fn delete_document(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
+    |                                                          -- binding `id` declared here
+...
+360 |           let doc: Option<DocumentRecord> = db
+    |  ___________________________________________-
+361 | |             .query("SELECT * FROM type::thing($id)")
+362 | |             .bind(("id", &id))
+    | |__________________________^^^_- argument requires that `id` is borrowed for `'static`
+    |                            |
+    |                            borrowed value does not live long enough
+...
+387 |       }
+    |       - `id` dropped here while still borrowed
+
+error[E0597]: `input.notebook_id` does not live long enough
+   --> src/graphql/mutation.rs:408:35
+    |
+395 |           input: CreateSessionInput,
+    |           ----- binding `input` declared here
+...
+404 |           let records: Vec<SessionRecord> = db
+    |  ___________________________________________-
+405 | |             .query(
+406 | |                 "CREATE session SET notebook = type::thing($notebook_id), user = type::thing($user_id), title = $title"
+407 | |             )
+408 | |             .bind(("notebook_id", &input.notebook_id))
+    | |___________________________________^^^^^^^^^^^^^^^^^^_- argument requires that `input.notebook_id` is borrowed for `'static`
+    |                                     |
+    |                                     borrowed value does not live long enough
+...
+421 |       }
+    |       - `input.notebook_id` dropped here while still borrowed
+
+error[E0597]: `claims.sub` does not live long enough
+   --> src/graphql/mutation.rs:409:31
+    |
+397 |           let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+    |               ------ binding `claims` declared here
+...
+404 |           let records: Vec<SessionRecord> = db
+    |  ___________________________________________-
+405 | |             .query(
+406 | |                 "CREATE session SET notebook = type::thing($notebook_id), user = type::thing($user_id), title = $title"
+...   |
+409 | |             .bind(("user_id", &claims.sub))
+    | |_______________________________^^^^^^^^^^^_- argument requires that `claims.sub` is borrowed for `'static`
+    |                                 |
+    |                                 borrowed value does not live long enough
+...
+421 |       }
+    |       - `claims.sub` dropped here while still borrowed
+
+error[E0597]: `notebook_id` does not live long enough
+   --> src/graphql/query.rs:102:35
+    |
+ 92 |       async fn sessions(&self, ctx: &Context<'_>, notebook_id: String) -> Result<Vec<Session>> {
+    |                                                   ----------- binding `notebook_id` declared here
+...
+100 |           let records: Vec<SessionRecord> = db
+    |  ___________________________________________-
+101 | |             .query("SELECT * FROM session WHERE notebook = type::thing($notebook_id) AND user = type::thing($user_id) ORDER BY updated_at...
+102 | |             .bind(("notebook_id", &notebook_id))
+    | |___________________________________^^^^^^^^^^^^_- argument requires that `notebook_id` is borrowed for `'static`
+    |                                     |
+    |                                     borrowed value does not live long enough
+...
+110 |       }
+    |       - `notebook_id` dropped here while still borrowed
+
+error[E0597]: `claims.sub` does not live long enough
+   --> src/graphql/query.rs:103:31
+    |
+ 93 |           let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+    |               ------ binding `claims` declared here
+...
+100 |           let records: Vec<SessionRecord> = db
+    |  ___________________________________________-
+101 | |             .query("SELECT * FROM session WHERE notebook = type::thing($notebook_id) AND user = type::thing($user_id) ORDER BY updated_at...
+102 | |             .bind(("notebook_id", &notebook_id))
+103 | |             .bind(("user_id", &claims.sub))
+    | |_______________________________^^^^^^^^^^^_- argument requires that `claims.sub` is borrowed for `'static`
+    |                                 |
+    |                                 borrowed value does not live long enough
+...
+110 |       }
+    |       - `claims.sub` dropped here while still borrowed
+
+error[E0597]: `session_id` does not live long enough
+   --> src/graphql/query.rs:125:34
+    |
+116 |           session_id: String,
+    |           ---------- binding `session_id` declared here
+...
+123 |           let session: Option<SessionRecord> = db
+    |  ______________________________________________-
+124 | |             .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
+125 | |             .bind(("session_id", &session_id))
+    | |__________________________________^^^^^^^^^^^_- argument requires that `session_id` is borrowed for `'static`
+    |                                    |
+    |                                    borrowed value does not live long enough
+...
+146 |       }
+    |       - `session_id` dropped here while still borrowed
+
+error[E0597]: `claims.sub` does not live long enough
+   --> src/graphql/query.rs:126:31
+    |
+119 |           let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+    |               ------ binding `claims` declared here
+...
+123 |           let session: Option<SessionRecord> = db
+    |  ______________________________________________-
+124 | |             .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
+125 | |             .bind(("session_id", &session_id))
+126 | |             .bind(("user_id", &claims.sub))
+    | |_______________________________^^^^^^^^^^^_- argument requires that `claims.sub` is borrowed for `'static`
+    |                                 |
+    |                                 borrowed value does not live long enough
+...
+146 |       }
+    |       - `claims.sub` dropped here while still borrowed
+
+error[E0597]: `notebook_id` does not live long enough
+   --> src/graphql/query.rs:164:35
+    |
+152 |           notebook_id: String,
+    |           ----------- binding `notebook_id` declared here
+...
+162 |           let records: Vec<AccessRecord> = db
+    |  __________________________________________-
+163 | |             .query("SELECT * FROM has_access WHERE out = type::thing($notebook_id) FETCH in")
+164 | |             .bind(("notebook_id", &notebook_id))
+    | |___________________________________^^^^^^^^^^^^_- argument requires that `notebook_id` is borrowed for `'static`
+    |                                     |
+    |                                     borrowed value does not live long enough
+...
+190 |       }
+    |       - `notebook_id` dropped here while still borrowed
+
+error[E0277]: the trait bound `fn(..., ..., ..., ...) -> ... {chat_stream_handler}: Handler<_, _>` is not satisfied
+   --> src/main.rs:60:18
+    |
+ 60 |             post(crate::llm::sse::chat_stream_handler),
+    |             ---- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Handler<_, _>` is not implemented for fn item `fn(Extension<Arc<...>>, ..., ..., ...) -> ... {chat_stream_handler}`
+    |             |
+    |             required by a bound introduced by this call
+    |
+    = note: Consider using `#[axum::debug_handler]` to improve the error message
+    = help: the following other types implement trait `Handler<T, S>`:
+              `MethodRouter<S>` implements `Handler<(), S>`
+              `axum::handler::Layered<L, H, T, S>` implements `Handler<T, S>`
+note: required by a bound in `post`
+   --> /Users/houshuai/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/axum-0.8.8/src/routing/method_routing.rs:445:1
+    |
+445 | top_level_handler_fn!(post, POST);
+    | ^^^^^^^^^^^^^^^^^^^^^^----^^^^^^^
+    | |                     |
+    | |                     required by a bound in this function
+    | required by this bound in `post`
+    = note: the full name for the type has been written to '/Users/houshuai/project/ai_project/openNotebookLm/backend/target/debug/deps/open_notebook_lm-8596e099c99f00a7.long-type-16465951537640866344.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+    = note: this error originates in the macro `top_level_handler_fn` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `e`
+  --> src/error.rs:56:13
+   |
+56 |     fn from(e: jsonwebtoken::errors::Error) -> Self {
+   |             ^ help: if this is intentional, prefix it with an underscore: `_e`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+Some errors have detailed explanations: E0277, E0433, E0597.
+For more information about an error, try `rustc --explain E0277`.
+warning: `open_notebook_lm` (bin "open_notebook_lm") generated 3 warnings
+error: could not compile `open_notebook_lm` (bin "open_notebook_lm") due to 21 previous errors; 3 warnings emitted

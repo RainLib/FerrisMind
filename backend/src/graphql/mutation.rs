@@ -34,7 +34,7 @@ impl MutationRoot {
         // Check if email already exists
         let existing: Vec<UserRecord> = db
             .query("SELECT * FROM user WHERE email = $email")
-            .bind(("email", &input.email))
+            .bind(("email", input.email.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -47,7 +47,7 @@ impl MutationRoot {
         // Check if username already exists
         let existing: Vec<UserRecord> = db
             .query("SELECT * FROM user WHERE username = $username")
-            .bind(("username", &input.username))
+            .bind(("username", input.username.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -65,9 +65,9 @@ impl MutationRoot {
             .query(
                 "CREATE user SET username = $username, email = $email, password_hash = $password_hash"
             )
-            .bind(("username", &input.username))
-            .bind(("email", &input.email))
-            .bind(("password_hash", &password_hash))
+            .bind(("username", input.username.clone()))
+            .bind(("email", input.email.clone()))
+            .bind(("password_hash", password_hash.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -102,7 +102,7 @@ impl MutationRoot {
         // Find user by email
         let records: Vec<UserRecord> = db
             .query("SELECT * FROM user WHERE email = $email")
-            .bind(("email", &input.email))
+            .bind(("email", input.email.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -161,9 +161,9 @@ impl MutationRoot {
             .query(
                 "CREATE notebook SET name = $name, description = $description, owner = type::thing($owner_id)"
             )
-            .bind(("name", &input.name))
-            .bind(("description", &input.description))
-            .bind(("owner_id", &claims.sub))
+            .bind(("name", input.name.clone()))
+            .bind(("description", input.description.clone()))
+            .bind(("owner_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -180,8 +180,8 @@ impl MutationRoot {
         db.query(
             "RELATE type::thing($user_id) -> has_access -> type::thing($notebook_id) SET role = 'owner'"
         )
-        .bind(("user_id", &claims.sub))
-        .bind(("notebook_id", &nb_id))
+        .bind(("user_id", claims.sub.clone()))
+        .bind(("notebook_id", nb_id.clone()))
         .await
         .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
@@ -217,7 +217,7 @@ impl MutationRoot {
 
         let records: Vec<NotebookRecord> = db
             .query(&query)
-            .bind(("id", &input.id))
+            .bind(("id", input.id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -240,7 +240,7 @@ impl MutationRoot {
             .map_err(|e| e.extend())?;
 
         db.query("UPDATE type::thing($id) SET is_deleted = true, updated_at = time::now()")
-            .bind(("id", &id))
+            .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
@@ -266,7 +266,7 @@ impl MutationRoot {
         // Find user by email
         let users: Vec<UserRecord> = db
             .query("SELECT * FROM user WHERE email = $email")
-            .bind(("email", &input.email))
+            .bind(("email", input.email.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -285,8 +285,8 @@ impl MutationRoot {
         // Check if already has access
         let existing: Vec<AccessRecord> = db
             .query("SELECT * FROM has_access WHERE in = type::thing($user_id) AND out = type::thing($notebook_id)")
-            .bind(("user_id", &target_user_id))
-            .bind(("notebook_id", &input.notebook_id))
+            .bind(("user_id", target_user_id.clone()))
+            .bind(("notebook_id", input.notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -295,17 +295,17 @@ impl MutationRoot {
         if !existing.is_empty() {
             // Update existing access
             db.query("UPDATE has_access SET role = $role WHERE in = type::thing($user_id) AND out = type::thing($notebook_id)")
-                .bind(("role", &input.role))
-                .bind(("user_id", &target_user_id))
-                .bind(("notebook_id", &input.notebook_id))
+                .bind(("role", input.role.to_string()))
+                .bind(("user_id", target_user_id.clone()))
+                .bind(("notebook_id", input.notebook_id.clone()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?;
         } else {
             // Create new access relation
             db.query("RELATE type::thing($user_id) -> has_access -> type::thing($notebook_id) SET role = $role")
-                .bind(("user_id", &target_user_id))
-                .bind(("notebook_id", &input.notebook_id))
-                .bind(("role", &input.role))
+                .bind(("user_id", target_user_id.clone()))
+                .bind(("notebook_id", input.notebook_id.clone()))
+                .bind(("role", input.role.to_string()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?;
         }
@@ -335,9 +335,9 @@ impl MutationRoot {
             .query(
                 "CREATE document SET notebook = type::thing($notebook_id), filename = $filename, file_type = $file_type, file_size = $file_size"
             )
-            .bind(("notebook_id", &notebook_id))
-            .bind(("filename", &filename))
-            .bind(("file_type", &file_type))
+            .bind(("notebook_id", notebook_id.clone()))
+            .bind(("filename", filename.clone()))
+            .bind(("file_type", file_type.clone()))
             .bind(("file_size", file_size))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -359,7 +359,7 @@ impl MutationRoot {
         // Get document to find notebook_id
         let doc: Option<DocumentRecord> = db
             .query("SELECT * FROM type::thing($id)")
-            .bind(("id", &id))
+            .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -374,12 +374,12 @@ impl MutationRoot {
 
         // Delete chunks first, then document
         db.query("DELETE chunk WHERE document = type::thing($doc_id)")
-            .bind(("doc_id", &id))
+            .bind(("doc_id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
         db.query("DELETE type::thing($id)")
-            .bind(("id", &id))
+            .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
@@ -405,9 +405,9 @@ impl MutationRoot {
             .query(
                 "CREATE session SET notebook = type::thing($notebook_id), user = type::thing($user_id), title = $title"
             )
-            .bind(("notebook_id", &input.notebook_id))
-            .bind(("user_id", &claims.sub))
-            .bind(("title", &input.title))
+            .bind(("notebook_id", input.notebook_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
+            .bind(("title", input.title.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -428,8 +428,8 @@ impl MutationRoot {
         // Verify session belongs to user
         let session: Option<SessionRecord> = db
             .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
-            .bind(("session_id", &input.session_id))
-            .bind(("user_id", &claims.sub))
+            .bind(("session_id", input.session_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -444,8 +444,8 @@ impl MutationRoot {
             .query(
                 "CREATE message SET session = type::thing($session_id), role = 'user', content = $content"
             )
-            .bind(("session_id", &input.session_id))
-            .bind(("content", &input.content))
+            .bind(("session_id", input.session_id.clone()))
+            .bind(("content", input.content.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -453,7 +453,7 @@ impl MutationRoot {
 
         // Update session timestamp
         db.query("UPDATE type::thing($session_id) SET updated_at = time::now()")
-            .bind(("session_id", &input.session_id))
+            .bind(("session_id", input.session_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 

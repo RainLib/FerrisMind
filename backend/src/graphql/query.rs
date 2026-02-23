@@ -16,7 +16,7 @@ impl QueryRoot {
 
         let record: Option<UserRecord> = db
             .query("SELECT * FROM type::thing($id)")
-            .bind(("id", &claims.sub))
+            .bind(("id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -36,7 +36,7 @@ impl QueryRoot {
             .query(
                 "SELECT out.* FROM has_access WHERE in = type::thing($user_id) AND out.is_deleted = false"
             )
-            .bind(("user_id", &claims.sub))
+            .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -57,7 +57,7 @@ impl QueryRoot {
 
         let record: Option<NotebookRecord> = db
             .query("SELECT * FROM type::thing($id) WHERE is_deleted = false")
-            .bind(("id", &id))
+            .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -79,7 +79,7 @@ impl QueryRoot {
 
         let records: Vec<DocumentRecord> = db
             .query("SELECT * FROM document WHERE notebook = type::thing($notebook_id) ORDER BY created_at DESC")
-            .bind(("notebook_id", &notebook_id))
+            .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -99,8 +99,8 @@ impl QueryRoot {
 
         let records: Vec<SessionRecord> = db
             .query("SELECT * FROM session WHERE notebook = type::thing($notebook_id) AND user = type::thing($user_id) ORDER BY updated_at DESC")
-            .bind(("notebook_id", &notebook_id))
-            .bind(("user_id", &claims.sub))
+            .bind(("notebook_id", notebook_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -122,8 +122,8 @@ impl QueryRoot {
         // Verify session belongs to user
         let session: Option<SessionRecord> = db
             .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
-            .bind(("session_id", &session_id))
-            .bind(("user_id", &claims.sub))
+            .bind(("session_id", session_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -135,7 +135,7 @@ impl QueryRoot {
 
         let records: Vec<MessageRecord> = db
             .query("SELECT * FROM message WHERE session = type::thing($session_id) ORDER BY created_at ASC LIMIT $limit")
-            .bind(("session_id", &session_id))
+            .bind(("session_id", session_id.clone()))
             .bind(("limit", limit))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -161,7 +161,7 @@ impl QueryRoot {
         // Query all access relations for this notebook, fetching user data
         let records: Vec<AccessRecord> = db
             .query("SELECT * FROM has_access WHERE out = type::thing($notebook_id) FETCH in")
-            .bind(("notebook_id", &notebook_id))
+            .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)

@@ -1,3 +1,3 @@
 pub mod manager;
-pub mod openai;
-pub mod provider;
+pub mod rig_client;
+pub mod sse;
