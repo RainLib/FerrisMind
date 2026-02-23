@@ -1,4 +1,6 @@
 import { EditorLayout } from "@/components/editor/EditorLayout";
+import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 
 export default function Editor() {
   return (
@@ -11,16 +13,14 @@ export default function Editor() {
               "repeating-linear-gradient(45deg, #171717, #171717 1px, transparent 1px, transparent 6px)",
           }}
         ></div>
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="w-10 h-10 bg-black text-white flex items-center justify-center shadow-hard-sm border border-black transform transition-transform hover:-translate-y-0.5">
-            <span className="material-symbols-outlined icon-lg">
-              auto_awesome
-            </span>
+        <Link href="/" className="flex items-center gap-4 relative z-10 group">
+          <div className="w-10 h-10 flex items-center justify-center transform transition-transform group-hover:-translate-y-0.5">
+            <Logo className="w-8 h-8 text-black" />
           </div>
           <h1 className="font-bold text-lg sm:text-xl tracking-tight uppercase truncate">
             Neo Workspace
           </h1>
-        </div>
+        </Link>
         <div className="flex items-center gap-2 sm:gap-3 relative z-10">
           <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
             <span className="material-symbols-outlined icon-sm">add</span>

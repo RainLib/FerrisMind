@@ -1,14 +1,13 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/logo";
 
 export default function Home() {
   return (
     <>
       <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-6 bg-white z-20 relative">
         <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-black text-white flex items-center justify-center shadow-hard-sm border border-black">
-            <span className="material-symbols-outlined icon-sm">
-              auto_awesome
-            </span>
+          <div className="w-10 h-10 flex items-center justify-center">
+            <Logo className="w-8 h-8 text-black" />
           </div>
           <h1 className="font-bold text-lg tracking-tight uppercase">
             Neo Workspace
