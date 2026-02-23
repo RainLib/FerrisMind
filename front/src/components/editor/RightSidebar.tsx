@@ -60,6 +60,9 @@ export function RightSidebar({
           {/* Audio Tool */}
           <button
             title="Audio"
+            onClick={() => {
+              if (!isExpanded && onToggle) onToggle();
+            }}
             className={cn(
               "relative flex p-3 bg-orange-50/60 border border-orange-200 rounded-sm hover:border-orange-500 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-orange group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -90,6 +93,9 @@ export function RightSidebar({
           {/* Video Tool */}
           <button
             title="Video"
+            onClick={() => {
+              if (!isExpanded && onToggle) onToggle();
+            }}
             className={cn(
               "relative flex p-3 bg-cyan-50/60 border border-cyan-200 rounded-sm hover:border-cyan-500 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-blue group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -120,6 +126,9 @@ export function RightSidebar({
           {/* Brief Tool */}
           <button
             title="Brief"
+            onClick={() => {
+              if (!isExpanded && onToggle) onToggle();
+            }}
             className={cn(
               "relative flex p-3 bg-emerald-50/60 border border-emerald-200 rounded-sm hover:border-emerald-600 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-green group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -150,6 +159,9 @@ export function RightSidebar({
           {/* Cards Tool */}
           <button
             title="Cards"
+            onClick={() => {
+              if (!isExpanded && onToggle) onToggle();
+            }}
             className={cn(
               "relative flex p-3 bg-violet-50/60 border border-violet-200 rounded-sm hover:border-violet-600 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-purple group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",

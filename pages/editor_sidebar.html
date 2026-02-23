@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Amber Tech-Chic Linear Workspace - Collapsed</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#171717", // Slightly softer black
+                        "bg-sources": "#fafaf9", // Stone-50 warm tint
+                        "bg-studio": "#fafaf9", // Stone-50 warm tint
+                        "bg-main": "#FFFFFF", // Center remains white
+                        "border-bold": "#171717",
+                        "accent-main": "#f59e0b", // Amber-500
+                        "accent-secondary": "#d97706", // Amber-600 for hover
+                        "accent-light": "#fef3c7", // Amber-100
+                    },
+                    fontFamily: {
+                        sans: ["Public Sans", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'hard': '3px 3px 0px 0px #171717',
+                        'hard-sm': '1px 1px 0px 0px #171717',
+                        'hard-hover': '4px 4px 0px 0px #171717',
+                    },
+                    backgroundImage: {
+                        'diagonal-pattern': 'repeating-linear-gradient(45deg, #171717 0, #171717 1px, transparent 0, transparent 50%)',
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+            background-color: #ffffff;
+            color: #171717;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings:
+                'FILL' 0,
+                'wght' 500,
+                'GRAD' 0,
+                'opsz' 24;
+            font-size: 20px;
+        }
+
+        .icon-sm {
+            font-size: 18px;
+        }
+
+        .icon-lg {
+            font-size: 24px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #fafaf9;
+            border-left: 1px solid #e5e5e5;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d4d4d4;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a3a3a3;
+        }
+
+        button:focus {
+            outline: 1px solid #171717;
+            outline-offset: 2px;
+        }
+
+        .nb-border {
+            border: 1px solid #171717;
+        }
+
+        .nb-border-r {
+            border-right: 1px solid #171717;
+        }
+
+        .nb-border-l {
+            border-left: 1px solid #171717;
+        }
+
+        .nb-border-b {
+            border-bottom: 1px solid #171717;
+        }
+
+        .nb-border-t {
+            border-top: 1px solid #171717;
+        }
+
+        .stripe-deco {
+            background-image: repeating-linear-gradient(45deg,
+                    #171717,
+                    #171717 1px,
+                    transparent 1px,
+                    transparent 6px);
+            opacity: 0.1;
+        }
+
+        .writing-vertical-rl {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+    </style>
+</head>
+
+<body class="h-screen overflow-hidden flex flex-col bg-white text-black">
+    <header
+        class="h-16 shrink-0 nb-border-b flex items-center justify-between px-6 bg-white z-20 relative overflow-hidden">
+        <div class="stripe-deco absolute top-0 right-0 bottom-0 w-64 pointer-events-none"></div>
+        <div class="flex items-center gap-4 relative z-10">
+            <div
+                class="w-10 h-10 bg-black text-white flex items-center justify-center shadow-hard-sm border border-black transform transition-transform hover:-translate-y-0.5">
+                <span class="material-symbols-outlined icon-lg">auto_awesome</span>
+            </div>
+            <h1 class="font-bold text-xl tracking-tight uppercase">Neo Workspace</h1>
+        </div>
+        <div class="flex items-center gap-3 relative z-10">
+            <button
+                class="flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
+                <span class="material-symbols-outlined icon-sm">add</span>
+                Notebook
+            </button>
+            <div class="h-6 w-px bg-gray-300 mx-2"></div>
+            <button
+                class="w-10 h-10 flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+                title="Analytics">
+                <span class="material-symbols-outlined icon-sm">analytics</span>
+            </button>
+            <button
+                class="w-10 h-10 flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+                title="Share">
+                <span class="material-symbols-outlined icon-sm">share</span>
+            </button>
+            <button
+                class="w-10 h-10 flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+                title="Settings">
+                <span class="material-symbols-outlined icon-sm">settings</span>
+            </button>
+            <div class="w-10 h-10 border border-black overflow-hidden shadow-hard-sm ml-2">
+                <img alt="User Avatar" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDU-DdYBfrFz-om3NR3ti3vMwzqmnGUGZLKIiUxgjgXeggfaNKkY4I7KzszndsvY7r90cccF3eWELBKnYVytB6PDtTlC9zAwd6ULKKLUmvHlt76S9XdpTsG_v3MgdW5thM63xoMm-gknjo3UFZkCpDmnYnerCiDaIGG4_5FjTWyrXPqf5Z_UMWcgXrWelxirf9_Ne6wWI52X_af3MNcsIOQe-tBE9EeO01HQX6mLI9Ovlagabo_xz1alYPg0osyOjcZMQFRlhTLo83t" />
+            </div>
+        </div>
+    </header>
+    <main class="flex-1 flex overflow-hidden">
+        <aside
+            class="w-14 flex flex-col bg-bg-sources nb-border-r items-center py-4 gap-6 shrink-0 transition-all duration-300">
+            <button
+                class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all rounded-sm"
+                title="Expand Sources">
+                <span class="material-symbols-outlined icon-sm">dock_to_right</span>
+            </button>
+            <div class="w-8 h-px bg-gray-300"></div>
+            <div class="flex flex-col gap-4 items-center w-full">
+                <button
+                    class="w-9 h-9 bg-white border border-black shadow-hard-sm flex items-center justify-center hover:bg-accent-light hover:text-accent-secondary transition-all group"
+                    title="Add Source">
+                    <span class="material-symbols-outlined icon-sm">add</span>
+                </button>
+                <div class="relative group cursor-pointer">
+                    <div
+                        class="w-9 h-9 flex items-center justify-center bg-accent-main text-white font-bold text-xs border border-black shadow-sm">
+                        9
+                    </div>
+                    <div
+                        class="absolute left-full top-0 ml-2 bg-black text-white text-xs px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        Active Sources</div>
+                </div>
+            </div>
+            <div class="flex-1 flex flex-col gap-3 items-center mt-2 w-full">
+                <button
+                    class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-black hover:bg-white hover:border hover:border-black transition-all rounded-sm"
+                    title="PDFs">
+                    <span class="material-symbols-outlined icon-sm">picture_as_pdf</span>
+                </button>
+                <button
+                    class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-black hover:bg-white hover:border hover:border-black transition-all rounded-sm"
+                    title="Web">
+                    <span class="material-symbols-outlined icon-sm">public</span>
+                </button>
+            </div>
+            <div class="mt-auto">
+                <div
+                    class="writing-vertical-rl transform rotate-180 text-[10px] font-bold uppercase tracking-widest text-gray-400 py-4 cursor-default select-none">
+                    Sources
+                </div>
+            </div>
+        </aside>
+        <section class="flex-1 flex flex-col bg-bg-main relative min-w-0">
+            <div
+                class="p-5 nb-border-b flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Chat</h2>
+                    <div
+                        class="px-2 py-0.5 bg-accent-light text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm">
+                        9 sources active</div>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        class="p-2 border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-sm text-gray-500 hover:text-black">
+                        <span class="material-symbols-outlined icon-sm">tune</span>
+                    </button>
+                    <button
+                        class="p-2 border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-sm text-gray-500 hover:text-black">
+                        <span class="material-symbols-outlined icon-sm">more_horiz</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-8 lg:px-24 pt-8 pb-40">
+                <div class="max-w-4xl mx-auto space-y-12">
+                    <div class="space-y-6">
+                        <div class="flex items-start justify-between border-b border-gray-200 pb-6">
+                            <h1
+                                class="text-4xl lg:text-5xl font-black text-black tracking-tight uppercase leading-none">
+                                Agentic AI Overview</h1>
+                            <div class="flex gap-2">
+                                <button
+                                    class="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
+                                    title="Copy">
+                                    <span class="material-symbols-outlined icon-sm">content_copy</span>
+                                </button>
+                                <button
+                                    class="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
+                                    title="Save">
+                                    <span class="material-symbols-outlined icon-sm">bookmark_border</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="prose prose-slate prose-lg max-w-none text-gray-800">
+                            <p class="leading-relaxed font-normal">
+                                These documents mainly explore the integration and application of <span
+                                    class="bg-accent-light border-b-2 border-accent-main px-1 font-semibold text-black">Large
+                                    Language Models (LLM)</span> and <span
+                                    class="bg-accent-light border-b-2 border-accent-main px-1 font-semibold text-black">Agentic</span>
+                                architectures in modern recommendation systems.
+                            </p>
+                            <p class="leading-relaxed font-normal mt-4">
+                                The content details advanced technologies ranging from <span
+                                    class="font-bold border-b border-black">Transformer</span> infrastructure to
+                                Retrieval-Augmented Generation (<span
+                                    class="font-bold text-accent-secondary">RAG</span>), specifically leveraging
+                                Knowledge Graphs and Multi-Agent frameworks (like <span
+                                    class="font-bold underline decoration-2 underline-offset-4 decoration-accent-main">LangGraph</span>)
+                                to enhance system reasoning and planning capabilities.
+                            </p>
+                            <p class="leading-relaxed font-normal mt-4">
+                                Through a specific movie recommendation project case, the documents demonstrate how to
+                                build complex backend systems containing microservices, real-time data pipelines, and
+                                automated evaluation feedback loops.
+                            </p>
+                        </div>
+                        <div class="flex gap-3 pt-4">
+                            <button
+                                class="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Suggest related topics
+                            </button>
+                            <button
+                                class="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Draft summary
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <button
+                            class="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                            <span
+                                class="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">Beginner's
+                                Guide</span>
+                            <span class="block text-sm font-bold text-black">How to use AWS to build Agentic AI?</span>
+                        </button>
+                        <button
+                            class="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                            <span
+                                class="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">Comparison</span>
+                            <span class="block text-sm font-bold text-black">LangGraph vs LlamaIndex pros &amp;
+                                cons.</span>
+                        </button>
+                        <button
+                            class="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                            <span
+                                class="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">Best
+                                Practices</span>
+                            <span class="block text-sm font-bold text-black">Ensuring AI agent safety &amp; performance
+                                in production?</span>
+                        </button>
+                    </div>
+                    <div class="flex justify-center py-4">
+                        <span
+                            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white px-3 py-1">Today,
+                            2:34 PM</span>
+                    </div>
+                    <div class="flex justify-end w-full">
+                        <div class="bg-gray-100 text-black px-6 py-4 border border-black shadow-hard-sm max-w-[80%]">
+                            <p class="text-sm font-medium">I expect how to introduce skills and framework design.</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-start w-full pb-8">
+                        <div class="w-full bg-white border border-black p-8 shadow-hard relative">
+                            <div
+                                class="absolute -top-3 -left-3 bg-accent-main border border-black px-3 py-1 text-xs font-bold uppercase text-white shadow-sm">
+                                AI Response</div>
+                            <div class="space-y-6 text-sm text-black leading-relaxed">
+                                <p>Introducing <span class="font-bold bg-gray-900 text-white px-1">Skills</span> and
+                                    designing an <span class="font-bold bg-gray-900 text-white px-1">Agentic
+                                        Framework</span> are core to building modern autonomous AI systems.</p>
+                                <div class="pl-4 py-2 border-l-2 border-accent-main space-y-5 bg-stone-50 -mx-8 px-8">
+                                    <h3 class="font-bold text-lg text-black">1. Skill Encapsulation Design</h3>
+                                    <p class="font-medium text-gray-700">"Skills" are not just API calls; they should be
+                                        designed as independent modules.</p>
+                                    <ul class="space-y-4 mt-2 list-none">
+                                        <li class="flex gap-4">
+                                            <div
+                                                class="w-6 h-6 bg-white border border-black text-black flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                A</div>
+                                            <div>
+                                                <span class="font-bold text-black block mb-1">Skill-as-a-Folder</span>
+                                                <p class="text-gray-600 text-sm">
+                                                    Standardize by encapsulating each Skill as a folder containing <code
+                                                        class="bg-white border border-gray-300 px-1 text-xs font-mono text-accent-secondary">SKILL.md</code>.
+                                                </p>
+                                            </div>
+                                        </li>
+                                        <li class="flex gap-4">
+                                            <div
+                                                class="w-6 h-6 bg-white border border-black text-black flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                B</div>
+                                            <div>
+                                                <span class="font-bold text-black block mb-1">Stateless Atomic
+                                                    Design</span>
+                                                <p class="text-gray-600 text-sm">
+                                                    Input → Execution → Output. Skills should not retain conversation
+                                                    history.
+                                                </p>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-bg-main via-bg-main to-transparent pt-12">
+                <div class="max-w-4xl mx-auto">
+                    <div
+                        class="bg-white border border-black shadow-hard hover:shadow-hard-hover transition-all flex flex-col relative z-20">
+                        <textarea
+                            class="w-full bg-transparent border-none text-black placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 py-4 resize-none h-16"
+                            placeholder="Ask a follow up question..."></textarea>
+                        <div class="flex items-center justify-between px-3 pb-3">
+                            <div class="flex gap-2">
+                                <button
+                                    class="p-2 text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all rounded-sm">
+                                    <span class="material-symbols-outlined icon-sm">add_circle</span>
+                                </button>
+                                <button
+                                    class="p-2 text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all rounded-sm">
+                                    <span class="material-symbols-outlined icon-sm">mic</span>
+                                </button>
+                            </div>
+                            <button
+                                class="p-2 bg-accent-main border border-black text-white hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm">
+                                <span class="material-symbols-outlined icon-sm">arrow_upward</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AI may produce
+                            inaccurate information</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <aside
+            class="w-14 flex flex-col bg-bg-studio nb-border-l items-center py-4 gap-6 shrink-0 transition-all duration-300 relative">
+            <button
+                class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all rounded-sm"
+                title="Expand Studio">
+                <span class="material-symbols-outlined icon-sm">dock_to_left</span>
+            </button>
+            <div class="w-8 h-px bg-gray-300"></div>
+            <div class="flex flex-col gap-3 w-full items-center">
+                <button
+                    class="w-9 h-9 flex items-center justify-center bg-white border border-transparent hover:border-black hover:shadow-hard-sm text-gray-500 hover:text-black transition-all rounded-sm group relative"
+                    title="Audio">
+                    <span class="material-symbols-outlined icon-sm">graphic_eq</span>
+                    <div class="absolute w-2 h-2 bg-accent-main rounded-full top-1 right-1 border border-white"></div>
+                </button>
+                <button
+                    class="w-9 h-9 flex items-center justify-center bg-white border border-transparent hover:border-black hover:shadow-hard-sm text-gray-500 hover:text-black transition-all rounded-sm"
+                    title="Video">
+                    <span class="material-symbols-outlined icon-sm">smart_display</span>
+                </button>
+                <button
+                    class="w-9 h-9 flex items-center justify-center bg-white border border-transparent hover:border-black hover:shadow-hard-sm text-gray-500 hover:text-black transition-all rounded-sm"
+                    title="Brief">
+                    <span class="material-symbols-outlined icon-sm">summarize</span>
+                </button>
+                <button
+                    class="w-9 h-9 flex items-center justify-center bg-white border border-transparent hover:border-black hover:shadow-hard-sm text-gray-500 hover:text-black transition-all rounded-sm"
+                    title="Cards">
+                    <span class="material-symbols-outlined icon-sm">style</span>
+                </button>
+            </div>
+            <div class="mt-auto flex flex-col items-center gap-4 w-full">
+                <div class="w-8 h-px bg-gray-300"></div>
+                <button
+                    class="w-9 h-9 flex items-center justify-center bg-accent-main border border-black shadow-hard-sm text-white hover:-translate-y-0.5 transition-all rounded-sm"
+                    title="New Output">
+                    <span class="material-symbols-outlined icon-sm">add</span>
+                </button>
+                <div
+                    class="writing-vertical-rl text-[10px] font-bold uppercase tracking-widest text-gray-400 py-4 cursor-default select-none">
+                    Studio
+                </div>
+            </div>
+        </aside>
+    </main>
+
+</body>
+
+</html>

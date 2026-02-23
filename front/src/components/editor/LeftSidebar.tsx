@@ -14,14 +14,14 @@ export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
           Sources
         </h2>
         <div className="flex gap-2">
-          {isMobile && (
-            <Button variant="icon" title="Close Sidebar" onClick={onToggle}>
-              <span className="material-symbols-outlined icon-sm">close</span>
-            </Button>
-          )}
           <Button variant="icon" title="Space Dashboard">
             <span className="material-symbols-outlined icon-sm">
               space_dashboard
+            </span>
+          </Button>
+          <Button variant="icon" title="Collapse Sidebar" onClick={onToggle}>
+            <span className="material-symbols-outlined icon-sm">
+              {isMobile ? "close" : "dock_to_left"}
             </span>
           </Button>
         </div>

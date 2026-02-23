@@ -54,4 +54,29 @@
   .table-row-hover:hover {
     background-color: #fafaf9;
   }
+
+  .writing-vertical-rl {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .nb-border {
+    border: 1px solid var(--color-border-bold);
+  }
+
+  .nb-border-r {
+    border-right: 1px solid var(--color-border-bold);
+  }
+
+  .nb-border-l {
+    border-left: 1px solid var(--color-border-bold);
+  }
+
+  .nb-border-b {
+    border-bottom: 1px solid var(--color-border-bold);
+  }
+
+  .nb-border-t {
+    border-top: 1px solid var(--color-border-bold);
+  }
 }
