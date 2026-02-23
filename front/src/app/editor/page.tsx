@@ -1,8 +1,40 @@
+"use client";
+
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
+import { useState, useRef, useEffect } from "react";
 
 export default function Editor() {
+  const [title, setTitle] = useState("Neo Workspace");
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempTitle, setTempTitle] = useState(title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    if (tempTitle.trim()) {
+      setTitle(tempTitle.trim());
+    } else {
+      setTempTitle(title);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSave();
+    if (e.key === "Escape") {
+      setTempTitle(title);
+      setIsEditing(false);
+    }
+  };
+
   return (
     <>
       <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-4 sm:px-6 bg-white z-20 relative overflow-hidden">
@@ -13,14 +45,32 @@ export default function Editor() {
               "repeating-linear-gradient(45deg, #171717, #171717 1px, transparent 1px, transparent 6px)",
           }}
         ></div>
-        <Link href="/" className="flex items-center gap-4 relative z-10 group">
-          <div className="w-10 h-10 flex items-center justify-center transform transition-transform group-hover:-translate-y-0.5">
+        <div className="flex items-center gap-4 relative z-10">
+          <Link
+            href="/"
+            className="w-10 h-10 flex items-center justify-center transform transition-transform hover:-translate-y-0.5 group"
+          >
             <Logo className="w-8 h-8 text-black" />
-          </div>
-          <h1 className="font-bold text-lg sm:text-xl tracking-tight uppercase truncate">
-            Neo Workspace
-          </h1>
-        </Link>
+          </Link>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={tempTitle}
+              onChange={(e) => setTempTitle(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={handleKeyDown}
+              className="font-bold text-lg sm:text-xl tracking-tight uppercase bg-gray-50 border-b-2 border-black focus:outline-none px-1 py-0.5 min-w-[200px]"
+            />
+          ) : (
+            <h1
+              onClick={() => setIsEditing(true)}
+              className="font-bold text-lg sm:text-xl tracking-tight uppercase truncate cursor-pointer hover:bg-gray-50 px-1 py-0.5 border-b-2 border-transparent hover:border-gray-200 transition-all"
+            >
+              {title}
+            </h1>
+          )}
+        </div>
         <div className="flex items-center gap-2 sm:gap-3 relative z-10">
           <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
             <span className="material-symbols-outlined icon-sm">add</span>

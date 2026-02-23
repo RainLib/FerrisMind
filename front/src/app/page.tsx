@@ -1,7 +1,106 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useMemo } from "react";
 import { Logo } from "@/components/ui/logo";
 
+interface Notebook {
+  id: string;
+  title: string;
+  sources: number;
+  created: string;
+  role: string;
+  icon: string;
+  iconColor: string;
+  iconBg: string;
+  type: string;
+}
+
+const INITIAL_NOTEBOOKS: Notebook[] = [
+  {
+    id: "1",
+    title: "Elasticsearch Report",
+    sources: 16,
+    created: "Feb 7, 2026",
+    role: "Owner",
+    icon: "search",
+    iconColor: "text-blue-600",
+    iconBg: "bg-blue-50",
+    type: "My notebooks",
+  },
+  {
+    id: "2",
+    title: "Agentic AI Overview",
+    sources: 9,
+    created: "Feb 6, 2026",
+    role: "Owner",
+    icon: "smart_toy",
+    iconColor: "text-accent-secondary",
+    iconBg: "bg-accent-light",
+    type: "My notebooks",
+  },
+  {
+    id: "3",
+    title: "Search Learn Knowledge",
+    sources: 56,
+    created: "Feb 6, 2026",
+    role: "Owner",
+    icon: "neurology",
+    iconColor: "text-purple-600",
+    iconBg: "bg-purple-50",
+    type: "Featured",
+  },
+  {
+    id: "4",
+    title: "Game VFX",
+    sources: 1,
+    created: "Jan 28, 2026",
+    role: "Owner",
+    icon: "local_fire_department",
+    iconColor: "text-orange-600",
+    iconBg: "bg-orange-50",
+    type: "My notebooks",
+  },
+  {
+    id: "5",
+    title: "Cognitive Frameworks",
+    sources: 12,
+    created: "Jan 15, 2026",
+    role: "Member",
+    icon: "psychology",
+    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-50",
+    type: "Shared with me",
+  },
+  {
+    id: "6",
+    title: "Untitled Notebook",
+    sources: 0,
+    created: "Jan 10, 2026",
+    role: "Owner",
+    icon: "draft",
+    iconColor: "text-slate-600",
+    iconBg: "bg-slate-50",
+    type: "My notebooks",
+  },
+];
+
 export default function Home() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("My notebooks");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [notebooks] = useState<Notebook[]>(INITIAL_NOTEBOOKS);
+
+  const filteredNotebooks = useMemo(() => {
+    return notebooks.filter((n) => {
+      const matchesSearch = n.title
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesTab = activeTab === "All" || n.type === activeTab;
+      return matchesSearch && matchesTab;
+    });
+  }, [notebooks, searchTerm, activeTab]);
+
   return (
     <>
       <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-6 bg-white z-20 relative">
@@ -22,6 +121,8 @@ export default function Home() {
               className="bg-gray-50 border border-gray-200 rounded-lg py-1.5 pl-9 pr-4 text-sm focus:border-black focus:ring-0 transition-all w-64 placeholder-gray-400"
               placeholder="Search notebooks..."
               type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 hover:text-black transition-colors">
@@ -62,27 +163,44 @@ export default function Home() {
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-1">
           <div className="flex gap-6">
-            <button className="pb-3 border-b-2 border-transparent hover:border-gray-300 text-gray-500 hover:text-black text-sm font-medium transition-colors">
-              All
-            </button>
-            <button className="pb-3 border-b-2 border-accent-main text-black text-sm font-semibold">
-              My notebooks
-            </button>
-            <button className="pb-3 border-b-2 border-transparent hover:border-gray-300 text-gray-500 hover:text-black text-sm font-medium transition-colors">
-              Featured
-            </button>
-            <button className="pb-3 border-b-2 border-transparent hover:border-gray-300 text-gray-500 hover:text-black text-sm font-medium transition-colors">
-              Shared with me
-            </button>
+            {["All", "My notebooks", "Featured", "Shared with me"].map(
+              (tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-3 border-b-2 text-sm transition-colors ${
+                    activeTab === tab
+                      ? "border-accent-main text-black font-semibold"
+                      : "border-transparent hover:border-gray-300 text-gray-500 hover:text-black font-medium"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ),
+            )}
           </div>
           <div className="flex items-center gap-2 pb-2">
             <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-              <button className="p-1 bg-white shadow-sm rounded text-black">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1 rounded transition-all ${
+                  viewMode === "list"
+                    ? "bg-white shadow-sm text-black"
+                    : "text-gray-500 hover:text-black"
+                }`}
+              >
                 <span className="material-symbols-outlined icon-sm">
                   view_list
                 </span>
               </button>
-              <button className="p-1 text-gray-500 hover:text-black">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-1 rounded transition-all ${
+                  viewMode === "grid"
+                    ? "bg-white shadow-sm text-black"
+                    : "text-gray-500 hover:text-black"
+                }`}
+              >
                 <span className="material-symbols-outlined icon-sm">
                   grid_view
                 </span>
@@ -96,225 +214,133 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-auto bg-white border border-gray-200 rounded-xl shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold tracking-wider sticky top-0 z-10">
-              <tr>
-                <th className="px-6 py-4 border-b border-gray-200 font-medium w-1/2">
-                  Title
-                </th>
-                <th className="px-6 py-4 border-b border-gray-200 font-medium">
-                  Sources
-                </th>
-                <th className="px-6 py-4 border-b border-gray-200 font-medium">
-                  Created
-                </th>
-                <th className="px-6 py-4 border-b border-gray-200 font-medium">
-                  Role
-                </th>
-                <th className="px-6 py-4 border-b border-gray-200 font-medium text-right">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {/* Row 1 */}
-              <tr className="group table-row-hover transition-colors cursor-pointer">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-                      <span className="material-symbols-outlined icon-sm">
-                        search
+        {viewMode === "list" ? (
+          <div className="flex-1 overflow-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold tracking-wider sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-4 border-b border-gray-200 font-medium w-1/2">
+                    Title
+                  </th>
+                  <th className="px-6 py-4 border-b border-gray-200 font-medium">
+                    Sources
+                  </th>
+                  <th className="px-6 py-4 border-b border-gray-200 font-medium">
+                    Created
+                  </th>
+                  <th className="px-6 py-4 border-b border-gray-200 font-medium">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 border-b border-gray-200 font-medium text-right">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm">
+                {filteredNotebooks.map((n) => (
+                  <tr
+                    key={n.id}
+                    className="group table-row-hover transition-colors cursor-pointer"
+                  >
+                    <td className="px-6 py-4">
+                      <Link
+                        href="/editor"
+                        className="flex items-center gap-3 w-full h-full"
+                      >
+                        <div
+                          className={`w-8 h-8 rounded ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100`}
+                        >
+                          <span className="material-symbols-outlined icon-sm">
+                            {n.icon}
+                          </span>
+                        </div>
+                        <span className="font-semibold text-gray-900">
+                          {n.title}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 font-mono text-xs">
+                      {n.sources} Sources
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">{n.created}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        {n.role}
                       </span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      Elasticsearch Report
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
+                        <span className="material-symbols-outlined icon-sm">
+                          more_vert
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredNotebooks.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center gap-2 text-gray-400">
+                        <span className="material-symbols-outlined text-4xl">
+                          inbox
+                        </span>
+                        <p>No notebooks found</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                <tr className="h-16">
+                  <td className="hatch-pattern opacity-30" colSpan={5}></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredNotebooks.map((n) => (
+              <Link
+                href="/editor"
+                key={n.id}
+                className="group p-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-hard-sm hover:border-black hover:-translate-y-1 transition-all flex flex-col justify-between"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div
+                    className={`w-12 h-12 rounded-lg ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100 shadow-sm`}
+                  >
+                    <span className="material-symbols-outlined text-2xl">
+                      {n.icon}
                     </span>
                   </div>
-                </td>
-                <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                  16 Sources
-                </td>
-                <td className="px-6 py-4 text-gray-500">Feb 7, 2026</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    Owner
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
+                  <button className="text-gray-400 hover:text-black">
                     <span className="material-symbols-outlined icon-sm">
                       more_vert
                     </span>
                   </button>
-                </td>
-              </tr>
-              {/* Row 2 */}
-              <tr className="group table-row-hover transition-colors cursor-pointer bg-accent-light/30">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-accent-light text-accent-secondary flex items-center justify-center border border-accent-main shadow-hard-sm">
-                      <span className="material-symbols-outlined icon-sm">
-                        smart_toy
-                      </span>
-                    </div>
-                    <span className="font-bold text-black">
-                      Agentic AI Overview
-                    </span>
-                    <span className="ml-2 w-2 h-2 bg-accent-main rounded-full"></span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-900 font-bold font-mono text-xs">
-                  9 Sources
-                </td>
-                <td className="px-6 py-4 text-gray-900 font-medium">
-                  Feb 6, 2026
-                </td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent-light text-accent-secondary border border-accent-main/30">
-                    Owner
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-black p-1 rounded hover:bg-accent-light transition-all">
-                    <span className="material-symbols-outlined icon-sm">
-                      more_vert
-                    </span>
-                  </button>
-                </td>
-              </tr>
-              {/* Row 3 */}
-              <tr className="group table-row-hover transition-colors cursor-pointer">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
-                      <span className="material-symbols-outlined icon-sm">
-                        neurology
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      Search Learn Knowledge
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                  56 Sources
-                </td>
-                <td className="px-6 py-4 text-gray-500">Feb 6, 2026</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    Owner
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                    <span className="material-symbols-outlined icon-sm">
-                      more_vert
-                    </span>
-                  </button>
-                </td>
-              </tr>
-              {/* Row 4 */}
-              <tr className="group table-row-hover transition-colors cursor-pointer">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-orange-50 text-orange-600 flex items-center justify-center border border-orange-100">
-                      <span className="material-symbols-outlined icon-sm">
-                        local_fire_department
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      Game VFX
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                  1 Source
-                </td>
-                <td className="px-6 py-4 text-gray-500">Jan 28, 2026</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    Owner
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                    <span className="material-symbols-outlined icon-sm">
-                      more_vert
-                    </span>
-                  </button>
-                </td>
-              </tr>
-              {/* Row 5 */}
-              <tr className="group table-row-hover transition-colors cursor-pointer">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                      <span className="material-symbols-outlined icon-sm">
-                        psychology
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      Cognitive Frameworks
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                  12 Sources
-                </td>
-                <td className="px-6 py-4 text-gray-500">Jan 15, 2026</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    Member
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                    <span className="material-symbols-outlined icon-sm">
-                      more_vert
-                    </span>
-                  </button>
-                </td>
-              </tr>
-              {/* Row 6 */}
-              <tr className="group table-row-hover transition-colors cursor-pointer">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded bg-slate-50 text-slate-600 flex items-center justify-center border border-slate-200">
-                      <span className="material-symbols-outlined icon-sm">
-                        draft
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      Untitled Notebook
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                  0 Sources
-                </td>
-                <td className="px-6 py-4 text-gray-500">Jan 10, 2026</td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                    Owner
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                    <span className="material-symbols-outlined icon-sm">
-                      more_vert
-                    </span>
-                  </button>
-                </td>
-              </tr>
-              <tr className="h-16">
-                <td className="hatch-pattern opacity-30" colSpan={5}></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-black text-lg mb-1">
+                    {n.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 font-mono">
+                    {n.sources} SOURCES • {n.created}
+                  </p>
+                </div>
+              </Link>
+            ))}
+            {filteredNotebooks.length === 0 && (
+              <div className="col-span-full h-64 flex flex-col items-center justify-center gap-2 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl">
+                <span className="material-symbols-outlined text-4xl">
+                  inbox
+                </span>
+                <p>No notebooks found</p>
+              </div>
+            )}
+          </div>
+        )}
         <div className="mt-4 flex justify-between items-center text-xs text-gray-400">
-          <p>Showing 6 of 12 notebooks</p>
+          <p>
+            Showing {filteredNotebooks.length} of {notebooks.length} notebooks
+          </p>
           <div className="flex gap-2">
             <button className="hover:text-black transition-colors">
               Privacy
