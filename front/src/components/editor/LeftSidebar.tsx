@@ -9,20 +9,26 @@ interface LeftSidebarProps {
 export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
   return (
     <aside className="w-full h-full flex flex-col bg-bg-sources border-r border-border-bold">
-      <div className="p-5 flex items-center justify-between border-b border-border-bold bg-bg-sources">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-sources shrink-0">
         <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest overflow-hidden whitespace-nowrap text-ellipsis">
           Sources
         </h2>
         <div className="flex gap-2">
-          <Button variant="icon" title="Space Dashboard">
+          <Button variant="icon" className="relative group">
             <span className="material-symbols-outlined icon-sm">
               space_dashboard
             </span>
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover:block">
+              Space Dashboard
+            </div>
           </Button>
-          <Button variant="icon" title="Collapse Sidebar" onClick={onToggle}>
+          <Button variant="icon" onClick={onToggle} className="relative group">
             <span className="material-symbols-outlined icon-sm">
               {isMobile ? "close" : "dock_to_left"}
             </span>
+            <div className="absolute top-full mt-2 right-0 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover:block">
+              {isMobile ? "Close Sidebar" : "Collapse Sidebar"}
+            </div>
           </Button>
         </div>
       </div>

@@ -25,7 +25,7 @@ export function RightSidebar({
         isPanel && "w-full",
       )}
     >
-      <div className="p-4 flex items-center justify-between border-b border-border-bold bg-bg-studio">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-studio shrink-0">
         {isExpanded && (
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap overflow-hidden">
             Studio
@@ -34,14 +34,16 @@ export function RightSidebar({
         <button
           onClick={onToggle}
           className={cn(
-            "text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all p-1",
+            "text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all p-1 relative group",
             !isExpanded && "mx-auto",
           )}
-          title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
         >
           <span className="material-symbols-outlined icon-sm">
             {isExpanded ? "dock_to_right" : "dock_to_left"}
           </span>
+          <div className="absolute top-full mt-2 right-0 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover:block">
+            {isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+          </div>
         </button>
       </div>
 
@@ -59,7 +61,6 @@ export function RightSidebar({
         >
           {/* Audio Tool */}
           <button
-            title="Audio"
             onClick={() => {
               if (!isExpanded && onToggle) onToggle();
             }}
@@ -92,7 +93,6 @@ export function RightSidebar({
 
           {/* Video Tool */}
           <button
-            title="Video"
             onClick={() => {
               if (!isExpanded && onToggle) onToggle();
             }}
@@ -125,7 +125,6 @@ export function RightSidebar({
 
           {/* Brief Tool */}
           <button
-            title="Brief"
             onClick={() => {
               if (!isExpanded && onToggle) onToggle();
             }}
@@ -158,7 +157,6 @@ export function RightSidebar({
 
           {/* Cards Tool */}
           <button
-            title="Cards"
             onClick={() => {
               if (!isExpanded && onToggle) onToggle();
             }}

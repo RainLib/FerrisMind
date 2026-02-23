@@ -5,10 +5,9 @@ import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 interface ChatPanelProps {
   isMobile?: boolean;
   onOpenLeft?: () => void;
-  onOpenRight?: () => void;
 }
 
-export function ChatPanel({ onOpenLeft, onOpenRight }: ChatPanelProps) {
+export function ChatPanel({ onOpenLeft }: ChatPanelProps) {
   const markdownContent = `
 These documents mainly explore the integration and application of **Large Language Models (LLM)** and **Agentic** architectures in modern recommendation systems.
 
@@ -31,7 +30,7 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
 
   return (
     <section className="flex-1 flex flex-col bg-bg-main relative w-full h-full">
-      <div className="p-4 md:p-5 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm">
+      <div className="h-14 px-4 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2 md:gap-3">
           {onOpenLeft && (
             <button
@@ -57,16 +56,6 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
               more_horiz
             </span>
           </Button>
-          {onOpenRight && (
-            <button
-              onClick={onOpenRight}
-              className="p-1 hover:bg-black hover:text-white transition-colors border border-transparent ml-2 text-gray-400"
-            >
-              <span className="material-symbols-outlined icon-sm">
-                dock_to_left
-              </span>
-            </button>
-          )}
         </div>
       </div>
 

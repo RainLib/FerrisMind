@@ -9,15 +9,26 @@ import { CollapsedRightSidebar } from "./CollapsedRightSidebar";
 
 function ResizeHandle({
   onMouseDown,
+  isDragging,
 }: {
   onMouseDown: (e: React.MouseEvent) => void;
+  isDragging?: boolean;
 }) {
   return (
     <div
       onMouseDown={onMouseDown}
-      className="w-4 flex flex-col items-center justify-center bg-transparent hover:bg-black/5 transition-colors cursor-col-resize group z-50 relative shrink-0"
+      className={`w-px bg-border-bold flex flex-col items-center justify-center transition-colors cursor-col-resize z-50 relative shrink-0 hover:bg-black group ${
+        isDragging ? "bg-black" : ""
+      }`}
     >
-      <div className="h-12 w-1.5 bg-gray-200 rounded-full group-hover:bg-accent-main transition-colors" />
+      {/* Invisible wider hit area */}
+      <div className="absolute inset-y-0 -left-2 w-4 bg-transparent z-10" />
+      {/* Visual pill */}
+      <div
+        className={`absolute h-8 w-1 rounded-full transition-colors z-20 ${
+          isDragging ? "bg-black" : "bg-transparent group-hover:bg-black"
+        }`}
+      />
     </div>
   );
 }
@@ -151,9 +162,6 @@ export function EditorLayout() {
             onOpenLeft={
               !isLeftExpanded ? () => setIsLeftExpanded(true) : undefined
             }
-            onOpenRight={
-              !isRightExpanded ? () => setIsRightExpanded(true) : undefined
-            }
           />
         </div>
       </div>
@@ -180,6 +188,7 @@ export function EditorLayout() {
             )}
           </div>
           <ResizeHandle
+            isDragging={isDraggingLeft}
             onMouseDown={(e) => {
               e.preventDefault();
               setIsDraggingLeft(true);
@@ -192,7 +201,6 @@ export function EditorLayout() {
       <div className="flex-1 min-w-0 h-full relative overflow-hidden bg-white">
         <ChatPanel
           onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}
-          onOpenRight={!isRightExpanded ? toggleRightSidebar : undefined}
         />
         {(isDraggingLeft || isDraggingRight) && (
           <div className="absolute inset-0 z-50 pointer-events-none" />
@@ -203,6 +211,7 @@ export function EditorLayout() {
       {isRightExpanded && (
         <>
           <ResizeHandle
+            isDragging={isDraggingRight}
             onMouseDown={(e) => {
               e.preventDefault();
               setIsDraggingRight(true);
