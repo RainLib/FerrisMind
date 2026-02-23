@@ -1,99 +1,156 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Logo } from "@/components/ui/logo";
+import {
+  fetchGraphQL,
+  GET_NOTEBOOKS,
+  CREATE_NOTEBOOK,
+  UPDATE_NOTEBOOK,
+  DELETE_NOTEBOOK,
+  Notebook,
+} from "@/lib/graphql";
 
-interface Notebook {
-  id: string;
-  title: string;
-  sources: number;
-  created: string;
+// UI-only properties that aren't in the DB yet
+interface NotebookUI extends Notebook {
   role: string;
   icon: string;
   iconColor: string;
   iconBg: string;
   type: string;
+  sources: number;
 }
 
-const INITIAL_NOTEBOOKS: Notebook[] = [
-  {
-    id: "1",
-    title: "Elasticsearch Report",
-    sources: 16,
-    created: "Feb 7, 2026",
-    role: "Owner",
-    icon: "search",
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-50",
-    type: "My notebooks",
-  },
-  {
-    id: "2",
-    title: "Agentic AI Overview",
-    sources: 9,
-    created: "Feb 6, 2026",
-    role: "Owner",
-    icon: "smart_toy",
-    iconColor: "text-accent-secondary",
-    iconBg: "bg-accent-light",
-    type: "My notebooks",
-  },
-  {
-    id: "3",
-    title: "Search Learn Knowledge",
-    sources: 56,
-    created: "Feb 6, 2026",
-    role: "Owner",
-    icon: "neurology",
-    iconColor: "text-purple-600",
-    iconBg: "bg-purple-50",
-    type: "Featured",
-  },
-  {
-    id: "4",
-    title: "Game VFX",
-    sources: 1,
-    created: "Jan 28, 2026",
-    role: "Owner",
-    icon: "local_fire_department",
-    iconColor: "text-orange-600",
-    iconBg: "bg-orange-50",
-    type: "My notebooks",
-  },
-  {
-    id: "5",
-    title: "Cognitive Frameworks",
-    sources: 12,
-    created: "Jan 15, 2026",
-    role: "Member",
-    icon: "psychology",
-    iconColor: "text-emerald-600",
-    iconBg: "bg-emerald-50",
-    type: "Shared with me",
-  },
-  {
-    id: "6",
-    title: "Untitled Notebook",
-    sources: 0,
-    created: "Jan 10, 2026",
-    role: "Owner",
-    icon: "draft",
-    iconColor: "text-slate-600",
-    iconBg: "bg-slate-50",
-    type: "My notebooks",
-  },
-];
+// Mock UI properties helper
+const mapToUI = (n: Notebook): NotebookUI => ({
+  ...n,
+  role: "Owner",
+  icon: "description",
+  iconColor: "text-blue-600",
+  iconBg: "bg-blue-50",
+  type: "My notebooks",
+  sources: 0,
+});
 
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("My notebooks");
+  const [activeTab, setActiveTab] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [notebooks] = useState<Notebook[]>(INITIAL_NOTEBOOKS);
+  const [notebooks, setNotebooks] = useState<NotebookUI[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedNotebook, setSelectedNotebook] = useState<NotebookUI | null>(
+    null,
+  );
+
+  // Form states
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+
+  // Dropdown state
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  const loadNotebooks = async () => {
+    setIsLoading(true);
+    const { data, errors } = await fetchGraphQL<{ notebooks: Notebook[] }>(
+      GET_NOTEBOOKS,
+    );
+    if (data) {
+      setNotebooks(data.notebooks.map(mapToUI));
+    } else if (errors) {
+      console.error("Failed to load notebooks:", errors);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadNotebooks();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenDropdownId(null);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const openCreateModal = () => {
+    setFormName("");
+    setFormDescription("");
+    setCreateModalOpen(true);
+  };
+
+  const openEditModal = (notebook: NotebookUI, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedNotebook(notebook);
+    setFormName(notebook.name);
+    setFormDescription(notebook.description || "");
+    setOpenDropdownId(null);
+    setEditModalOpen(true);
+  };
+
+  const openDeleteModal = (notebook: NotebookUI, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedNotebook(notebook);
+    setOpenDropdownId(null);
+    setDeleteModalOpen(true);
+  };
+
+  const submitCreateNotebook = async () => {
+    if (!formName.trim()) return alert("Name is required");
+    const { data, errors } = await fetchGraphQL<{
+      createNotebook: { id: string };
+    }>(CREATE_NOTEBOOK, { name: formName, description: formDescription });
+    if (data) {
+      setCreateModalOpen(false);
+      loadNotebooks();
+    } else if (errors) {
+      alert("Failed to create notebook: " + errors[0].message);
+    }
+  };
+
+  const submitEditNotebook = async () => {
+    if (!selectedNotebook) return;
+    if (!formName.trim()) return alert("Name is required");
+    const { data, errors } = await fetchGraphQL<{
+      updateNotebook: { id: string };
+    }>(UPDATE_NOTEBOOK, {
+      id: selectedNotebook.id,
+      name: formName,
+      description: formDescription,
+    });
+    if (data) {
+      setEditModalOpen(false);
+      loadNotebooks();
+    } else if (errors) {
+      alert("Failed to update notebook: " + errors[0].message);
+    }
+  };
+
+  const submitDeleteNotebook = async () => {
+    if (!selectedNotebook) return;
+    const { data, errors } = await fetchGraphQL<{
+      deleteNotebook: boolean;
+    }>(DELETE_NOTEBOOK, { id: selectedNotebook.id });
+    if (data) {
+      setDeleteModalOpen(false);
+      loadNotebooks();
+    } else if (errors) {
+      alert("Failed to delete notebook: " + errors[0].message);
+    }
+  };
 
   const filteredNotebooks = useMemo(() => {
-    return notebooks.filter((n) => {
-      const matchesSearch = n.title
+    return notebooks.filter((n: NotebookUI) => {
+      const matchesSearch = n.name
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesTab = activeTab === "All" || n.type === activeTab;
@@ -153,13 +210,13 @@ export default function Home() {
               Manage and organize your AI research projects.
             </p>
           </div>
-          <Link
-            href="/editor"
-            className="flex items-center gap-2 px-5 py-2.5 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-lg font-semibold text-sm"
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-5 py-2.5 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-lg font-semibold text-sm cursor-pointer"
           >
             <span className="material-symbols-outlined icon-sm">add</span>
             Create new
-          </Link>
+          </button>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-1">
           <div className="flex gap-6">
@@ -237,47 +294,18 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-sm">
-                {filteredNotebooks.map((n) => (
-                  <tr
-                    key={n.id}
-                    className="group table-row-hover transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4">
-                      <Link
-                        href="/editor"
-                        className="flex items-center gap-3 w-full h-full"
-                      >
-                        <div
-                          className={`w-8 h-8 rounded ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100`}
-                        >
-                          <span className="material-symbols-outlined icon-sm">
-                            {n.icon}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-gray-900">
-                          {n.title}
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center gap-2 text-gray-400">
+                        <span className="material-symbols-outlined text-4xl animate-spin">
+                          progress_activity
                         </span>
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 text-gray-500 font-mono text-xs">
-                      {n.sources} Sources
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">{n.created}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                        {n.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                        <span className="material-symbols-outlined icon-sm">
-                          more_vert
-                        </span>
-                      </button>
+                        <p>Loading notebooks...</p>
+                      </div>
                     </td>
                   </tr>
-                ))}
-                {filteredNotebooks.length === 0 && (
+                ) : filteredNotebooks.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-2 text-gray-400">
@@ -288,6 +316,71 @@ export default function Home() {
                       </div>
                     </td>
                   </tr>
+                ) : (
+                  filteredNotebooks.map((n) => (
+                    <tr
+                      key={n.id}
+                      className="group table-row-hover transition-colors cursor-pointer"
+                      onClick={() => (window.location.href = "/editor")}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3 w-full h-full">
+                          <div
+                            className={`w-8 h-8 rounded ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100`}
+                          >
+                            <span className="material-symbols-outlined icon-sm">
+                              {n.icon}
+                            </span>
+                          </div>
+                          <span className="font-semibold text-gray-900">
+                            {n.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 font-mono text-xs">
+                        {n.sources} Sources
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">
+                        {new Date(n.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          {n.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDropdownId(
+                              openDropdownId === n.id ? null : n.id,
+                            );
+                          }}
+                          className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <span className="material-symbols-outlined icon-sm">
+                            more_vert
+                          </span>
+                        </button>
+                        {openDropdownId === n.id && (
+                          <div className="absolute right-6 top-10 w-32 bg-white border border-black shadow-hard-sm rounded-lg z-50 py-1 flex flex-col items-start overflow-hidden">
+                            <button
+                              onClick={(e) => openEditModal(n, e)}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-black font-medium"
+                            >
+                              Rename
+                            </button>
+                            <button
+                              onClick={(e) => openDeleteModal(n, e)}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-700 transition-colors text-red-600 font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
                 )}
                 <tr className="h-16">
                   <td className="hatch-pattern opacity-30" colSpan={5}></td>
@@ -297,50 +390,84 @@ export default function Home() {
           </div>
         ) : (
           <div className="flex-1 overflow-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredNotebooks.map((n) => (
-              <Link
-                href="/editor"
-                key={n.id}
-                className="group p-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-hard-sm hover:border-black hover:-translate-y-1 transition-all flex flex-col justify-between"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div
-                    className={`w-12 h-12 rounded-lg ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100 shadow-sm`}
-                  >
-                    <span className="material-symbols-outlined text-2xl">
-                      {n.icon}
-                    </span>
-                  </div>
-                  <button className="text-gray-400 hover:text-black">
-                    <span className="material-symbols-outlined icon-sm">
-                      more_vert
-                    </span>
-                  </button>
-                </div>
-                <div>
-                  <h3 className="font-bold text-black text-lg mb-1">
-                    {n.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 font-mono">
-                    {n.sources} SOURCES • {n.created}
-                  </p>
-                </div>
-              </Link>
-            ))}
-            {filteredNotebooks.length === 0 && (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-48 bg-gray-50 border border-gray-100 rounded-xl animate-pulse"
+                />
+              ))
+            ) : filteredNotebooks.length === 0 ? (
               <div className="col-span-full h-64 flex flex-col items-center justify-center gap-2 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl">
                 <span className="material-symbols-outlined text-4xl">
                   inbox
                 </span>
                 <p>No notebooks found</p>
               </div>
+            ) : (
+              filteredNotebooks.map((n) => (
+                <Link
+                  href="/editor"
+                  key={n.id}
+                  className="group p-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-hard-sm hover:border-black hover:-translate-y-1 transition-all flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className={`w-12 h-12 rounded-lg ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100 shadow-sm`}
+                    >
+                      <span className="material-symbols-outlined text-2xl">
+                        {n.icon}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setOpenDropdownId(
+                            openDropdownId === n.id ? null : n.id,
+                          );
+                        }}
+                        className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="material-symbols-outlined icon-sm">
+                          more_vert
+                        </span>
+                      </button>
+                      {openDropdownId === n.id && (
+                        <div className="absolute right-0 top-8 w-32 bg-white border border-black shadow-hard-sm rounded-lg z-50 py-1 flex flex-col items-start overflow-hidden">
+                          <button
+                            onClick={(e) => openEditModal(n, e)}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-black font-medium"
+                          >
+                            Rename
+                          </button>
+                          <button
+                            onClick={(e) => openDeleteModal(n, e)}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-700 transition-colors text-red-600 font-medium"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-black text-lg mb-1">
+                      {n.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-mono">
+                      {n.sources} SOURCES •{" "}
+                      {new Date(n.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
+              ))
             )}
           </div>
         )}
         <div className="mt-4 flex justify-between items-center text-xs text-gray-400">
-          <p>
-            Showing {filteredNotebooks.length} of {notebooks.length} notebooks
-          </p>
+          <p>Showing {filteredNotebooks.length} notebooks</p>
           <div className="flex gap-2">
             <button className="hover:text-black transition-colors">
               Privacy
@@ -352,6 +479,157 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* CREATE MODAL */}
+      {createModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white border border-black shadow-modal rounded-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-black tracking-tight">
+                Create Notebook
+              </h3>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 block">
+                  Notebook Name *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors"
+                  placeholder="e.g. Q4 Financial Research"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 block">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors h-24 resize-none"
+                  placeholder="What is this notebook about?"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setCreateModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-black"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitCreateNotebook}
+                disabled={!formName.trim()}
+                className="px-4 py-2 border border-black shadow-hard-sm bg-accent-main text-white rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RENAME MODAL */}
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white border border-black shadow-modal rounded-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="font-bold text-lg text-black tracking-tight">
+                Rename Notebook
+              </h3>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 block">
+                  Notebook Name *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors"
+                  placeholder="e.g. Q4 Financial Research"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 block">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors h-24 resize-none"
+                  placeholder="What is this notebook about?"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-black"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitEditNotebook}
+                disabled={!formName.trim()}
+                className="px-4 py-2 border border-black shadow-hard-sm bg-accent-main text-white rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MODAL */}
+      {deleteModalOpen && selectedNotebook && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white border border-red-200 shadow-modal rounded-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-red-50">
+              <h3 className="font-bold text-lg text-red-600 tracking-tight flex items-center gap-2">
+                <span className="material-symbols-outlined icon-sm">
+                  warning
+                </span>
+                Delete Notebook
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 text-sm mb-4">
+                Are you sure you want to delete{" "}
+                <span className="font-bold text-black border border-gray-200 px-1 py-0.5 rounded bg-gray-50">
+                  {selectedNotebook.name}
+                </span>
+                ?
+              </p>
+              <p className="text-xs text-red-500/80">
+                This action cannot be undone. All documents and chat histories
+                inside this notebook will be immediately removed.
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-black"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitDeleteNotebook}
+                className="px-4 py-2 border border-black shadow-hard-sm bg-red-600 text-white rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard hover:bg-red-700 transition-all"
+              >
+                Yes, Delete It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

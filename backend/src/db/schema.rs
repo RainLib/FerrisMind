@@ -1,5 +1,5 @@
-use surrealdb::Surreal;
 use surrealdb::engine::remote::ws::Client;
+use surrealdb::Surreal;
 use tracing::info;
 
 /// Apply all SurrealDB schema definitions.
@@ -54,12 +54,17 @@ pub async fn apply_schema(db: &Surreal<Client>) -> anyhow::Result<()> {
         DEFINE TABLE document SCHEMAFULL;
         DEFINE FIELD notebook ON document TYPE record<notebook>;
         DEFINE FIELD filename ON document TYPE string;
+        DEFINE FIELD source_type ON document TYPE string ASSERT $value IN ['file', 'url', 'text'];
+        DEFINE FIELD sha256 ON document TYPE option<string>;
+        DEFINE FIELD url ON document TYPE option<string>;
+        DEFINE FIELD parsing_rules ON document TYPE option<object>;
         DEFINE FIELD file_type ON document TYPE string;
         DEFINE FIELD file_size ON document TYPE int;
-        DEFINE FIELD upload_status ON document TYPE string DEFAULT 'pending';
+        DEFINE FIELD upload_status ON document TYPE string ASSERT $value IN ['pending', 'processing', 'completed', 'failed'];
         DEFINE FIELD chunk_count ON document TYPE int DEFAULT 0;
         DEFINE FIELD created_at ON document TYPE datetime DEFAULT time::now();
         DEFINE INDEX idx_doc_notebook ON document FIELDS notebook;
+        DEFINE INDEX idx_doc_sha256 ON document FIELDS sha256;
     ",
     )
     .await?;

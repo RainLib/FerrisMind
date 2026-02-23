@@ -315,7 +315,7 @@ impl MutationRoot {
 
     // ─── Document Management ───
 
-    /// Register a document upload (metadata only; file upload is via REST endpoint).
+    /// Register a document upload or URL (metadata only; file upload is via REST endpoint).
     async fn create_document(
         &self,
         ctx: &Context<'_>,
@@ -323,6 +323,10 @@ impl MutationRoot {
         filename: String,
         file_type: String,
         file_size: i64,
+        source_type: String,
+        sha256: Option<String>,
+        url: Option<String>,
+        parsing_rules: Option<String>, // JSON string mapped to Option<object>
     ) -> Result<Document> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
@@ -331,24 +335,59 @@ impl MutationRoot {
             .await
             .map_err(|e| e.extend())?;
 
+        // Validate source type
+        if !["file", "url", "text"].contains(&source_type.as_str()) {
+            return Err(AppError::BadRequest(
+                "Invalid source_type. Must be file, url, or text.".to_string(),
+            )
+            .extend());
+        }
+
+        let parsed_rules: Option<serde_json::Value> = if let Some(rules) = parsing_rules {
+            Some(serde_json::from_str(&rules).map_err(|e| {
+                AppError::BadRequest(format!("Invalid parsing rules JSON: {}", e)).extend()
+            })?)
+        } else {
+            None
+        };
+
         let records: Vec<DocumentRecord> = db
             .query(
-                "CREATE document SET notebook = type::thing($notebook_id), filename = $filename, file_type = $file_type, file_size = $file_size"
+                "CREATE document SET notebook = type::thing($notebook_id), filename = $filename, file_type = $file_type, file_size = $file_size, source_type = $source_type, sha256 = $sha256, url = $url, parsing_rules = $parsing_rules, upload_status = 'pending'"
             )
             .bind(("notebook_id", notebook_id.clone()))
             .bind(("filename", filename.clone()))
             .bind(("file_type", file_type.clone()))
             .bind(("file_size", file_size))
+            .bind(("source_type", source_type))
+            .bind(("sha256", sha256))
+            .bind(("url", url))
+            .bind(("parsing_rules", parsed_rules))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
-        records
+        let doc = records
             .into_iter()
             .next()
-            .map(Document::from)
-            .ok_or_else(|| AppError::Internal("Failed to create document".to_string()).extend())
+            .ok_or_else(|| AppError::Internal("Failed to create document".to_string()).extend())?;
+
+        let doc_id_string = doc.id.as_ref().map(|t| t.to_string()).unwrap_or_default();
+        if !doc_id_string.is_empty() {
+            let llm = ctx
+                .data::<std::sync::Arc<crate::llm::manager::LlmManager>>()?
+                .clone();
+            let ingest_service = std::sync::Arc::new(
+                crate::ingest::service::IngestionService::new(db.clone(), llm),
+            );
+
+            tokio::spawn(async move {
+                ingest_service.process_document(doc_id_string).await;
+            });
+        }
+
+        Ok(Document::from(doc))
     }
 
     /// Delete a document (requires editor+ access).

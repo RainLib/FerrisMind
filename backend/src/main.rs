@@ -10,12 +10,13 @@ use tower_http::trace::TraceLayer;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
-mod auth;
-mod config;
-mod db;
-mod error;
-mod graphql;
-mod llm;
+pub mod auth;
+pub mod config;
+pub mod db;
+pub mod error;
+pub mod graphql;
+pub mod ingest;
+pub mod llm;
 
 use crate::auth::middleware::auth_middleware;
 use crate::config::AppConfig;

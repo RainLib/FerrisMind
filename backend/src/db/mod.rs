@@ -1,8 +1,8 @@
 pub mod schema;
 
-use surrealdb::Surreal;
 use surrealdb::engine::remote::ws::{Client, Ws};
 use surrealdb::opt::auth::Root;
+use surrealdb::Surreal;
 use tracing::info;
 
 use crate::config::SurrealConfig;
@@ -29,6 +29,12 @@ pub async fn init_db(config: &SurrealConfig) -> anyhow::Result<Db> {
 
     // Run schema migrations
     schema::apply_schema(&db).await?;
+
+    // Ensure mock user exists for development
+    let _: Vec<serde_json::Value> = db
+        .query("UPSERT user:mock_dev_user SET username = 'dev_user', email = 'dev@example.com', password_hash = 'nopass'")
+        .await?
+        .take(0)?;
 
     Ok(db)
 }
