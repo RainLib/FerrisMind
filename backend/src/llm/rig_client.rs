@@ -1,31 +1,35 @@
 use crate::config::LlmConfig;
-use rig::providers::openai::Client as OpenAIClient;
+use rig::providers::gemini::Client as GeminiClient;
 
-/// A wrapper around Rig's LLM capabilities
+/// A wrapper around Rig's LLM capabilities using Gemini
 pub struct RigClient {
-    pub openai_client: OpenAIClient,
+    pub gemini_client: GeminiClient,
     pub default_model: String,
+    pub embedding_model: String,
 }
 
 impl RigClient {
     pub fn new(config: &LlmConfig) -> Self {
-        // Handle Result from Client::new (confirmed by prior build errors)
-        let openai_client =
-            OpenAIClient::new(&config.api_key).expect("Failed to initialize OpenAI client");
+        let gemini_client =
+            GeminiClient::new(&config.api_key).expect("Failed to initialize Gemini client");
 
         Self {
-            openai_client,
+            gemini_client,
             default_model: config.model.clone(),
+            embedding_model: config.embedding_model.clone(),
         }
     }
 
-    /// Return the underlying OpenAI client.
-    /// In rig 0.31.0, traits like CompletionClient are implemented on Client.
-    pub fn client(&self) -> &OpenAIClient {
-        &self.openai_client
+    /// Return the underlying Gemini client.
+    pub fn client(&self) -> &GeminiClient {
+        &self.gemini_client
     }
 
     pub fn default_model(&self) -> &str {
         &self.default_model
+    }
+
+    pub fn embedding_model(&self) -> &str {
+        &self.embedding_model
     }
 }

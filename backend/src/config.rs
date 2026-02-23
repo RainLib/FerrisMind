@@ -33,8 +33,8 @@ pub struct JwtConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct LlmConfig {
     pub api_key: String,
-    pub api_base: String,
     pub model: String,
+    pub embedding_model: String,
     pub max_tokens: u32,
 }
 
@@ -72,9 +72,10 @@ impl AppConfig {
             },
             llm: LlmConfig {
                 api_key: std::env::var("LLM_API_KEY").unwrap_or_default(),
-                api_base: std::env::var("LLM_API_BASE")
-                    .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
-                model: std::env::var("LLM_MODEL").unwrap_or_else(|_| "gpt-4o".to_string()),
+                model: std::env::var("LLM_MODEL")
+                    .unwrap_or_else(|_| "gemini-2.0-flash".to_string()),
+                embedding_model: std::env::var("EMBEDDING_MODEL")
+                    .unwrap_or_else(|_| "text-embedding-004".to_string()),
                 max_tokens: std::env::var("LLM_MAX_TOKENS")
                     .unwrap_or_else(|_| "4096".to_string())
                     .parse()?,

@@ -53,29 +53,20 @@ pub async fn chat_stream_handler(
         ));
     }
 
-    // 3. Prepare Rig Agent
-    let rig = llm.rig();
-    let model_name = rig.default_model();
-
-    let agent = rig.client().agent(model_name).build();
+    // 3. Prepare Rig Agent using Gemini via LlmManager helper
+    let agent = llm.agent().build();
 
     // In rig 0.31.0, stream_prompt returns a Stream of MultiTurnStreamItem
     let stream = agent.stream_prompt(&input.content).await;
 
     // Map each chunk (MultiTurnStreamItem) to an Event
-    let event_stream = stream.map(|chunk| {
-        match chunk {
-            Ok(MultiTurnStreamItem::StreamAssistantItem(StreamedAssistantContent::Text(text))) => {
-                Ok(Event::default().data(text.text))
-            }
-            Ok(MultiTurnStreamItem::FinalResponse(res)) => {
-                // Optionally handle final response content if it wasn't already streamed
-                // Axum SSE typically prefers streaming as it comes
-                Ok(Event::default().data(res.response()))
-            }
-            Ok(_) => Ok(Event::default().data("")), // Handle other variants like ToolCall, Reasoning if needed
-            Err(e) => Ok(Event::default().event("error").data(e.to_string())),
+    let event_stream = stream.map(|chunk| match chunk {
+        Ok(MultiTurnStreamItem::StreamAssistantItem(StreamedAssistantContent::Text(text))) => {
+            Ok(Event::default().data(text.text))
         }
+        Ok(MultiTurnStreamItem::FinalResponse(res)) => Ok(Event::default().data(res.response())),
+        Ok(_) => Ok(Event::default().data("")),
+        Err(e) => Ok(Event::default().event("error").data(e.to_string())),
     });
 
     Ok(Sse::new(event_stream).keep_alive(KeepAlive::default()))
