@@ -1,34 +1,40 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import {
-  Panel,
-  Group as PanelGroup,
-  Separator as PanelResizeHandle,
-  PanelImperativeHandle,
-} from "react-resizable-panels";
+import React, { useState, useEffect, useCallback } from "react";
 import { LeftSidebar } from "./LeftSidebar";
 import { ChatPanel } from "./ChatPanel";
 import { RightSidebar } from "./RightSidebar";
 import { CollapsedLeftSidebar } from "./CollapsedLeftSidebar";
 import { CollapsedRightSidebar } from "./CollapsedRightSidebar";
 
-function ResizeHandle() {
+function ResizeHandle({
+  onMouseDown,
+}: {
+  onMouseDown: (e: React.MouseEvent) => void;
+}) {
   return (
-    <PanelResizeHandle className="w-4 flex flex-col items-center justify-center bg-transparent hover:bg-black/5 transition-colors cursor-col-resize group z-50 relative -mx-2">
+    <div
+      onMouseDown={onMouseDown}
+      className="w-4 flex flex-col items-center justify-center bg-transparent hover:bg-black/5 transition-colors cursor-col-resize group z-50 relative shrink-0"
+    >
       <div className="h-12 w-1.5 bg-gray-200 rounded-full group-hover:bg-accent-main transition-colors" />
-    </PanelResizeHandle>
+    </div>
   );
 }
 
 export function EditorLayout() {
   const [isLeftExpanded, setIsLeftExpanded] = useState(true);
   const [isRightExpanded, setIsRightExpanded] = useState(true);
+
+  // Pixel widths for sidebars
+  const [leftWidth, setLeftWidth] = useState(320);
+  const [rightWidth, setRightWidth] = useState(320);
+
+  const [isDraggingLeft, setIsDraggingLeft] = useState(false);
+  const [isDraggingRight, setIsDraggingRight] = useState(false);
+
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  const leftPanelRef = useRef<PanelImperativeHandle>(null);
-  const rightPanelRef = useRef<PanelImperativeHandle>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -43,17 +49,67 @@ export function EditorLayout() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const toggleLeftSidebar = () => {
-    setIsLeftExpanded(!isLeftExpanded);
-  };
+  // Left drag logic
+  const handleLeftMouseMove = useCallback((e: MouseEvent) => {
+    setLeftWidth(Math.max(240, Math.min(600, e.clientX)));
+  }, []);
 
-  const toggleRightSidebar = () => {
-    setIsRightExpanded(!isRightExpanded);
-  };
+  const handleLeftMouseUp = useCallback(() => {
+    setIsDraggingLeft(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDraggingLeft) {
+      window.addEventListener("mousemove", handleLeftMouseMove);
+      window.addEventListener("mouseup", handleLeftMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    } else {
+      window.removeEventListener("mousemove", handleLeftMouseMove);
+      window.removeEventListener("mouseup", handleLeftMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleLeftMouseMove);
+      window.removeEventListener("mouseup", handleLeftMouseUp);
+    };
+  }, [isDraggingLeft, handleLeftMouseMove, handleLeftMouseUp]);
+
+  // Right drag logic
+  const handleRightMouseMove = useCallback((e: MouseEvent) => {
+    setRightWidth(Math.max(240, Math.min(600, window.innerWidth - e.clientX)));
+  }, []);
+
+  const handleRightMouseUp = useCallback(() => {
+    setIsDraggingRight(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDraggingRight) {
+      window.addEventListener("mousemove", handleRightMouseMove);
+      window.addEventListener("mouseup", handleRightMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    } else {
+      window.removeEventListener("mousemove", handleRightMouseMove);
+      window.removeEventListener("mouseup", handleRightMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleRightMouseMove);
+      window.removeEventListener("mouseup", handleRightMouseUp);
+    };
+  }, [isDraggingRight, handleRightMouseMove, handleRightMouseUp]);
+
+  const toggleLeftSidebar = () => setIsLeftExpanded(!isLeftExpanded);
+  const toggleRightSidebar = () => setIsRightExpanded(!isRightExpanded);
 
   // Skip rendering until mounted to avoid hydration issues
   if (!mounted) return <div className="flex-1 w-full h-full bg-stone-50" />;
 
+  // Mobile drawer rendering
   if (isMobile) {
     return (
       <div className="flex-1 flex overflow-hidden relative w-full h-full bg-stone-50">
@@ -111,59 +167,62 @@ export function EditorLayout() {
         <CollapsedLeftSidebar onExpand={() => setIsLeftExpanded(true)} />
       )}
 
-      {/* Resizable Area */}
-      <PanelGroup
-        autoSaveId="editor-layout"
-        orientation="horizontal"
-        className="flex-1 h-full"
-      >
-        {isLeftExpanded && (
-          <>
-            <Panel
-              id="left-panel"
-              panelRef={leftPanelRef}
-              defaultSize={20}
-              minSize={15}
-              maxSize={35}
-              className="h-full bg-bg-sources overflow-hidden"
-            >
-              <LeftSidebar onToggle={toggleLeftSidebar} />
-            </Panel>
-            <ResizeHandle />
-          </>
-        )}
-
-        <Panel
-          id="chat-panel"
-          minSize={30}
-          className="h-full relative overflow-hidden bg-white"
-        >
-          <ChatPanel
-            onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}
-            onOpenRight={!isRightExpanded ? toggleRightSidebar : undefined}
+      {/* Expanded Left Sidebar + Handle */}
+      {isLeftExpanded && (
+        <>
+          <div
+            style={{ width: `${leftWidth}px` }}
+            className="h-full bg-bg-sources overflow-hidden shrink-0 flex flex-col relative"
+          >
+            <LeftSidebar onToggle={toggleLeftSidebar} />
+            {isDraggingLeft && (
+              <div className="absolute inset-0 z-50 pointer-events-none" />
+            )}
+          </div>
+          <ResizeHandle
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDraggingLeft(true);
+            }}
           />
-        </Panel>
+        </>
+      )}
 
-        {isRightExpanded && (
-          <>
-            <ResizeHandle />
-            <Panel
-              id="right-panel"
-              panelRef={rightPanelRef}
-              defaultSize={25}
-              minSize={20}
-              maxSize={40}
-              className="h-full relative overflow-hidden"
-            >
-              <RightSidebar
-                isExpanded={true}
-                onToggle={toggleRightSidebar}
-                isPanel
-              />
-            </Panel>
-          </>
+      {/* Main Center Panel */}
+      <div className="flex-1 min-w-0 h-full relative overflow-hidden bg-white">
+        <ChatPanel
+          onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}
+          onOpenRight={!isRightExpanded ? toggleRightSidebar : undefined}
+        />
+        {(isDraggingLeft || isDraggingRight) && (
+          <div className="absolute inset-0 z-50 pointer-events-none" />
         )}
-      </PanelGroup>
+      </div>
+
+      {/* Right Handle + Expanded Right Sidebar */}
+      {isRightExpanded && (
+        <>
+          <ResizeHandle
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDraggingRight(true);
+            }}
+          />
+          <div
+            style={{ width: `${rightWidth}px` }}
+            className="h-full relative overflow-hidden shrink-0 flex flex-col"
+          >
+            <RightSidebar
+              isExpanded={true}
+              onToggle={toggleRightSidebar}
+              isPanel
+            />
+            {isDraggingRight && (
+              <div className="absolute inset-0 z-50 pointer-events-none" />
+            )}
+          </div>
+        </>
+      )}
 
       {/* Fixed Collapsed Right Strip */}
       {!isRightExpanded && (
