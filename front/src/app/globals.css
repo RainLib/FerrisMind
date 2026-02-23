@@ -18,6 +18,24 @@
   --shadow-hard: 3px 3px 0px 0px #171717;
   --shadow-hard-sm: 1px 1px 0px 0px #171717;
   --shadow-hard-hover: 4px 4px 0px 0px #171717;
+  --shadow-modal:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1),
+    4px 4px 0px 0px #171717;
+
+  --background-image-diagonal-pattern: repeating-linear-gradient(
+    45deg,
+    #171717 0,
+    #171717 1px,
+    transparent 0,
+    transparent 50%
+  );
+  --background-image-diagonal-hatch: repeating-linear-gradient(
+    45deg,
+    #e5e5e5 0,
+    #e5e5e5 1px,
+    transparent 0,
+    transparent 10px
+  );
 }
 
 @layer base {

@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
@@ -7,7 +6,7 @@ interface ChatPanelProps {
   onOpenLeft?: () => void;
 }
 
-export function ChatPanel({ onOpenLeft }: ChatPanelProps) {
+export function ChatPanel({}: ChatPanelProps) {
   const markdownContent = `
 These documents mainly explore the integration and application of **Large Language Models (LLM)** and **Agentic** architectures in modern recommendation systems.
 
@@ -32,14 +31,6 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
     <section className="flex-1 flex flex-col bg-bg-main relative w-full h-full">
       <div className="h-14 px-4 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2 md:gap-3">
-          {onOpenLeft && (
-            <button
-              onClick={onOpenLeft}
-              className="p-1 hover:bg-black hover:text-white transition-colors border border-transparent mr-2 text-gray-400"
-            >
-              <span className="material-symbols-outlined icon-sm">menu</span>
-            </button>
-          )}
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden sm:block">
             Chat
           </h2>
