@@ -1,4 +1,4 @@
-const GRAPHQL_ENDPOINT = "http://localhost:4000/graphql";
+const GRAPHQL_ENDPOINT = "http://localhost:8080/graphql";
 
 export async function fetchGraphQL<T>(
   query: string,

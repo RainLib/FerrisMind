@@ -28,7 +28,7 @@ pub struct UserRecord {
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct NotebookRecord {
     pub id: Option<RecordId>,
-    pub name: String,
+    pub name: Option<String>,
     pub description: Option<String>,
     pub owner: RecordId,
     pub is_deleted: bool,
@@ -127,7 +127,7 @@ impl From<NotebookRecord> for Notebook {
     fn from(r: NotebookRecord) -> Self {
         Self {
             id: thing_to_string(&r.id),
-            name: r.name,
+            name: r.name.unwrap_or_default(),
             description: r.description,
             owner_id: r.owner.to_sql(),
             is_deleted: r.is_deleted,

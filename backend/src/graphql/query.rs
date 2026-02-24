@@ -16,7 +16,7 @@ impl QueryRoot {
         let db = ctx.data::<Db>()?;
 
         let record: Option<UserRecord> = db
-            .query("SELECT * FROM type::thing($id)")
+            .query("SELECT * FROM type::record($id)")
             .bind(("id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -35,7 +35,7 @@ impl QueryRoot {
 
         let records: Vec<NotebookRecord> = db
             .query(
-                "SELECT out.* FROM has_access WHERE in = type::thing($user_id) AND out.is_deleted = false"
+                "SELECT out.id AS id, (out.name ?? '') AS name, out.description AS description, out.owner AS owner, (out.is_deleted ?? false) AS is_deleted, out.created_at AS created_at, out.updated_at AS updated_at FROM has_access WHERE in = type::record($user_id) AND out.is_deleted = false"
             )
             .bind(("user_id", claims.sub.clone()))
             .await
@@ -57,7 +57,7 @@ impl QueryRoot {
             .map_err(|e| e.extend())?;
 
         let record: Option<NotebookRecord> = db
-            .query("SELECT * FROM type::thing($id) WHERE is_deleted = false")
+            .query("SELECT * FROM type::record($id) WHERE is_deleted = false")
             .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -79,7 +79,7 @@ impl QueryRoot {
             .map_err(|e| e.extend())?;
 
         let records: Vec<DocumentRecord> = db
-            .query("SELECT * FROM document WHERE notebook = type::thing($notebook_id) ORDER BY created_at DESC")
+            .query("SELECT * FROM document WHERE notebook = type::record($notebook_id) ORDER BY created_at DESC")
             .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -99,7 +99,7 @@ impl QueryRoot {
             .map_err(|e| e.extend())?;
 
         let records: Vec<SessionRecord> = db
-            .query("SELECT * FROM session WHERE notebook = type::thing($notebook_id) AND user = type::thing($user_id) ORDER BY updated_at DESC")
+            .query("SELECT * FROM session WHERE notebook = type::record($notebook_id) AND user = type::record($user_id) ORDER BY updated_at DESC")
             .bind(("notebook_id", notebook_id.clone()))
             .bind(("user_id", claims.sub.clone()))
             .await
@@ -122,7 +122,7 @@ impl QueryRoot {
 
         // Verify session belongs to user
         let session: Option<SessionRecord> = db
-            .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
+            .query("SELECT * FROM type::record($session_id) WHERE user = type::record($user_id)")
             .bind(("session_id", session_id.clone()))
             .bind(("user_id", claims.sub.clone()))
             .await
@@ -135,7 +135,7 @@ impl QueryRoot {
         }
 
         let records: Vec<MessageRecord> = db
-            .query("SELECT * FROM message WHERE session = type::thing($session_id) ORDER BY created_at ASC LIMIT $limit")
+            .query("SELECT * FROM message WHERE session = type::record($session_id) ORDER BY created_at ASC LIMIT $limit")
             .bind(("session_id", session_id.clone()))
             .bind(("limit", limit))
             .await
@@ -161,7 +161,7 @@ impl QueryRoot {
 
         // Query all access relations for this notebook, fetching user data
         let records: Vec<AccessRecord> = db
-            .query("SELECT * FROM has_access WHERE out = type::thing($notebook_id) FETCH in")
+            .query("SELECT * FROM has_access WHERE out = type::record($notebook_id) FETCH in")
             .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -171,7 +171,7 @@ impl QueryRoot {
         let mut members = Vec::new();
         for record in records {
             let user_record: Option<UserRecord> = db
-                .query("SELECT * FROM type::thing($user_id)")
+                .query("SELECT * FROM type::record($user_id)")
                 .bind(("user_id", record.r#in.to_sql()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?

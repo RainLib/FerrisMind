@@ -57,6 +57,9 @@ rig = { package = "rig-core", version = "0.31.0" }
 eventsource-stream = "0.2.3"
 async-trait = "0.1.87"
 
+# Workflow Management
+graph-flow = "0.4.0"
+
 # Templating
 tera = "1.20"
 

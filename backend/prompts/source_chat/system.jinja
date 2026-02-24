@@ -17,7 +17,7 @@ When a user asks you a question, analyze both the source content and the availab
 **Title:** {{ source.title or "No title" }}
 
 {% if source.topics %}
-**Topics:** {{ source.topics | join(", ") }}
+**Topics:** {{ source.topics | join(sep=", ") }}
 {% endif %}
 {% endif %}
 
@@ -32,7 +32,7 @@ When a user asks you a question, analyze both the source content and the availab
 When referencing information from the source or its insights, always include citations using the document IDs. This helps users track the specific content you're referencing.
 
 ## Citation Format
-- For source content: [{{ source.id if source else "source:id" }}]
+- For source content: [{% if source %}{{ source.id }}{% else %}source:id{% endif %}]
 - For insights: [insight_id] (use the specific insight ID)
 
 ## EXAMPLE

@@ -30,9 +30,7 @@ pub async fn check_notebook_access(
 ) -> Result<String, AppError> {
     // Query the has_access relation
     let result: Vec<AccessRecord> = db
-        .query(
-            "SELECT * FROM has_access WHERE in = type::thing($user_id) AND out = type::thing($notebook_id)",
-        )
+        .query("SELECT * FROM has_access WHERE in = type::record($user_id) AND out = type::record($notebook_id)")
         .bind(("user_id", user_id.to_string()))
         .bind(("notebook_id", notebook_id.to_string()))
         .await
