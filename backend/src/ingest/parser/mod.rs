@@ -1,5 +1,7 @@
 pub mod docx;
+pub mod excel;
 pub mod html;
+pub mod legacy;
 pub mod pdf;
 pub mod pptx;
 pub mod text;
@@ -171,6 +173,8 @@ impl ParserRegistry {
         registry.register(Box::new(pptx::PptxParser));
         registry.register(Box::new(html::HtmlParser));
         registry.register(Box::new(text::TextParser));
+        registry.register(Box::new(excel::ExcelParser));
+        registry.register(Box::new(legacy::LegacyOfficeParser));
         registry
     }
 

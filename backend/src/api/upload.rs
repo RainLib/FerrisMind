@@ -6,6 +6,7 @@ use axum::{
     Json,
 };
 use serde::Serialize;
+use percent_encoding::percent_decode_str;
 use sha2::{Digest, Sha256};
 use tracing::{error, info};
 
@@ -81,7 +82,10 @@ pub async fn upload_handler(
                     }),
                 )
             })?;
-            notebook_id = Some(text);
+            let decoded = percent_decode_str(&text)
+                .decode_utf8_lossy()
+                .into_owned();
+            notebook_id = Some(decoded);
             continue;
         }
 
@@ -90,9 +94,8 @@ pub async fn upload_handler(
                 .file_name()
                 .unwrap_or("unnamed")
                 .to_string();
-            let content_type = field
-                .content_type()
-                .unwrap_or("application/octet-stream")
+            let content_type = mime_guess::from_path(&filename)
+                .first_or_octet_stream()
                 .to_string();
             let data = field.bytes().await.map_err(|e| {
                 (
@@ -133,7 +136,7 @@ pub async fn upload_handler(
         let records: Vec<DocumentRecord> = db
             .query(
                 "CREATE document SET \
-                    notebook = type::thing($nb_id), \
+                    notebook = type::record($nb_id), \
                     filename = $filename, \
                     file_type = $file_type, \
                     file_size = $file_size, \

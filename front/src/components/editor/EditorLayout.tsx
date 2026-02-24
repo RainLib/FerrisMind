@@ -33,7 +33,7 @@ function ResizeHandle({
   );
 }
 
-export function EditorLayout() {
+export function EditorLayout({ notebookId }: { notebookId: string }) {
   const [isLeftExpanded, setIsLeftExpanded] = useState(true);
   const [isRightExpanded, setIsRightExpanded] = useState(true);
 
@@ -131,7 +131,11 @@ export function EditorLayout() {
           }`}
         >
           <div className="h-full w-80 shadow-2xl">
-            <LeftSidebar isMobile onToggle={() => setIsLeftExpanded(false)} />
+            <LeftSidebar
+              isMobile
+              onToggle={() => setIsLeftExpanded(false)}
+              notebookId={notebookId}
+            />
           </div>
         </div>
 
@@ -184,7 +188,7 @@ export function EditorLayout() {
         }}
         className="h-full bg-bg-sources overflow-hidden shrink-0 flex-col relative"
       >
-        <LeftSidebar onToggle={toggleLeftSidebar} />
+        <LeftSidebar onToggle={toggleLeftSidebar} notebookId={notebookId} />
         {isDraggingLeft && (
           <div className="absolute inset-0 z-50 pointer-events-none" />
         )}

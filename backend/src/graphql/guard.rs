@@ -3,6 +3,13 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::types::AccessRecord;
 use async_graphql::Context;
+use percent_encoding::percent_decode_str;
+
+/// Decode a record ID that may arrive percent-encoded from the frontend
+/// (e.g. `notebook%3Axyz` → `notebook:xyz`).
+pub fn decode_record_id(id: &str) -> String {
+    percent_decode_str(id).decode_utf8_lossy().into_owned()
+}
 
 /// Extract current authenticated user from GraphQL context.
 /// In development/integration mode, returns a mock user if not logged in.
@@ -39,8 +46,9 @@ pub async fn check_notebook_access(
         .map_err(|e| AppError::Database(e.to_string()))?;
 
     result
-        .first()
-        .map(|a| a.role.clone())
+        .into_iter()
+        .find(|a| a.r#in.is_some() && a.out.is_some())
+        .map(|a| a.role)
         .ok_or_else(|| AppError::Forbidden("No access to this notebook".to_string()))
 }
 

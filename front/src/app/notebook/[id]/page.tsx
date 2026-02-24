@@ -4,12 +4,39 @@ import { EditorLayout } from "@/components/editor/EditorLayout";
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { useState, useRef, useEffect } from "react";
+import { useParams } from "next/navigation";
+import { fetchGraphQL, GET_NOTEBOOK, Notebook } from "@/lib/graphql";
 
 export default function Editor() {
-  const [title, setTitle] = useState("Neo Workspace");
+  const params = useParams();
+  const id = params?.id as string;
+  const [title, setTitle] = useState("Loading...");
   const [isEditing, setIsEditing] = useState(false);
-  const [tempTitle, setTempTitle] = useState(title);
+  const [tempTitle, setTempTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const { data, errors } = await fetchGraphQL<{ notebook: Notebook }>(
+          GET_NOTEBOOK,
+          { id },
+        );
+        if (data?.notebook) {
+          setTitle(data.notebook.name);
+          setTempTitle(data.notebook.name);
+        } else if (errors) {
+          console.error("Failed to load notebook:", errors);
+          setTitle("Error Loading Notebook");
+        }
+      } catch (e) {
+        console.error(e);
+        setTitle("Error Loading Notebook");
+      }
+    };
+
+    loadData();
+  }, [id]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -105,7 +132,7 @@ export default function Editor() {
           </div>
         </div>
       </header>
-      <EditorLayout />
+      <EditorLayout notebookId={id} />
     </>
   );
 }

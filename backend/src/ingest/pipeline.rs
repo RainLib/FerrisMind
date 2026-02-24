@@ -200,13 +200,30 @@ impl IngestPipeline {
             file.mime_type.clone()
         };
 
-        let parser = self.registry.find(&mime).ok_or_else(|| {
-            anyhow::anyhow!(
-                "No parser found for MIME type '{}' (file: '{}')",
-                mime,
-                file.filename
-            )
-        })?;
+        let parser = self
+            .registry
+            .find(&mime)
+            .or_else(|| {
+                let fallback = ParserRegistry::resolve_mime(&file.filename);
+                if fallback != mime {
+                    info!(
+                        "MIME '{}' unsupported, trying filename-based fallback '{}'",
+                        mime, fallback
+                    );
+                    self.registry.find(&fallback)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Unsupported file format '{}' (MIME: '{}'). \
+                     Supported: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, HTML, TXT, MD. \
+                     For .doc/.ppt install LibreOffice (soffice) or antiword (.doc only).",
+                    file.filename,
+                    mime
+                )
+            })?;
 
         let ParseResult { sections, images } = parser.parse(file)?;
         if sections.is_empty() {

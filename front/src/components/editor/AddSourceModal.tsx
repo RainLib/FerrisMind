@@ -4,10 +4,18 @@ import { useState, useRef, useEffect } from "react";
 interface AddSourceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onUploadFiles?: (files: File[]) => void;
+  onUploadUrls?: (urls: string[]) => void;
 }
 
-export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
+export function AddSourceModal({
+  isOpen,
+  onClose,
+  onUploadFiles,
+  onUploadUrls,
+}: AddSourceModalProps) {
   const [inputValue, setInputValue] = useState("");
+  const [urlInputValue, setUrlInputValue] = useState("");
   const [activeTab, setActiveTab] = useState<"main" | "website" | "text">(
     "main",
   );
@@ -113,8 +121,18 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
                     ref={fileInputRef}
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
-                        console.log("Files selected:", e.target.files);
-                        // Handle file upload here
+                        try {
+                          if (onUploadFiles) {
+                            onUploadFiles(Array.from(e.target.files));
+                          }
+                          onClose();
+                        } catch (error) {
+                          console.error("Failed to select files:", error);
+                        } finally {
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }
                       }
                     }}
                   />
@@ -175,6 +193,8 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
                 <textarea
                   className="w-full h-full min-h-[250px] p-4 text-sm resize-none outline-none placeholder-gray-500"
                   placeholder="Paste any links"
+                  value={urlInputValue}
+                  onChange={(e) => setUrlInputValue(e.target.value)}
                   autoFocus
                 />
               </div>
@@ -205,8 +225,18 @@ export function AddSourceModal({ isOpen, onClose }: AddSourceModalProps) {
               </ul>
               <div className="flex justify-end gap-3 mt-auto">
                 <button
-                  className="px-6 py-2 bg-gray-200 text-gray-400 font-bold rounded-full text-sm shrink-0"
-                  disabled
+                  className="px-6 py-2 bg-black text-white hover:bg-black/90 font-bold rounded-full text-sm shrink-0 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400"
+                  disabled={!urlInputValue.trim()}
+                  onClick={() => {
+                    const links = urlInputValue
+                      .split(/[\s\n]+/)
+                      .filter((u) => u.startsWith("http"));
+                    if (links.length > 0 && onUploadUrls) {
+                      onUploadUrls(links);
+                      setUrlInputValue("");
+                      onClose();
+                    }
+                  }}
                 >
                   Insert
                 </button>

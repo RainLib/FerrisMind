@@ -37,6 +37,18 @@ export const GET_NOTEBOOKS = `
   }
 `;
 
+export const GET_NOTEBOOK = `
+  query GetNotebook($id: String!) {
+    notebook(id: $id) {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 // Mutations
 export const CREATE_NOTEBOOK = `
   mutation CreateNotebook($name: String!, $description: String) {
@@ -63,10 +75,100 @@ export const DELETE_NOTEBOOK = `
   }
 `;
 
+export const GET_NOTEBOOK_DOCUMENTS = `
+  query GetNotebookDocuments($notebookId: String!) {
+    documents(notebookId: $notebookId) {
+      id
+      filename
+      uploadStatus
+      chunkCount
+      sha256
+      createdAt
+      updatedAt
+      summary
+    }
+  }
+`;
+
+export const GET_DOCUMENT_UPLOAD_STATUSES = `
+  query DocumentUploadStatuses($ids: [String!]!) {
+    documentUploadStatuses(ids: $ids) {
+      id
+      filename
+      uploadStatus
+      chunkCount
+      sha256
+    }
+  }
+`;
+
+export const GET_DOCUMENT_CONTENT = `
+  query DocumentContent($documentId: String!) {
+    documentContent(documentId: $documentId) {
+      documentId
+      filename
+      uploadStatus
+      summary
+      chunks {
+        index
+        content
+      }
+      images {
+        imageId
+        mimeType
+        sourceRef
+        storedPath
+      }
+    }
+  }
+`;
+
+export const SUMMARIZE_DOCUMENT = `
+  mutation SummarizeDocument($documentId: String!) {
+    summarizeDocument(documentId: $documentId) {
+      documentId
+      summary
+    }
+  }
+`;
+
 export type Notebook = {
   id: string;
   name: string;
   description?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type Document = {
+  id: string;
+  filename: string;
+  uploadStatus: string;
+  chunkCount: number;
+  sha256: string;
+  createdAt: string;
+  updatedAt: string;
+  summary: string | null;
+};
+
+export type DocumentUploadStatus = {
+  id: string;
+  filename: string;
+  uploadStatus: string;
+  chunkCount: number;
+  sha256: string;
+};
+
+export type DocumentContent = {
+  documentId: string;
+  filename: string;
+  uploadStatus: string;
+  summary: string | null;
+  chunks: { index: number; content: string }[];
+  images: {
+    imageId: string;
+    mimeType: string;
+    sourceRef: string;
+    storedPath: string;
+  }[];
 };

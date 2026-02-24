@@ -36,12 +36,14 @@ pub struct NotebookRecord {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-/// Access relation record
+/// Access relation record.
+/// `in`/`out` are Option because SurrealDB may return null for relation fields
+/// in some response shapes (e.g. protocol or FETCH behavior).
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct AccessRecord {
     pub id: Option<RecordId>,
-    pub r#in: RecordId, // user
-    pub out: RecordId,  // notebook
+    pub r#in: Option<RecordId>,  // user
+    pub out: Option<RecordId>,   // notebook
     pub role: String,
     pub granted_at: Option<DateTime<Utc>>,
 }
@@ -62,6 +64,7 @@ pub struct DocumentRecord {
     pub chunk_count: i64,
     pub summary: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 /// Chunk record from SurrealDB
@@ -176,6 +179,7 @@ pub struct Document {
     pub chunk_count: i64,
     pub summary: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 impl From<DocumentRecord> for Document {
@@ -194,6 +198,7 @@ impl From<DocumentRecord> for Document {
             chunk_count: r.chunk_count,
             summary: r.summary,
             created_at: r.created_at,
+            updated_at: r.updated_at,
         }
     }
 }

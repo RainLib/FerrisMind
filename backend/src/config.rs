@@ -84,11 +84,13 @@ impl AppConfig {
                     .parse()?,
             },
             llm: LlmConfig {
-                api_key: std::env::var("LLM_API_KEY").unwrap_or_default(),
+                api_key: std::env::var("LLM_API_KEY")
+                    .or_else(|_| std::env::var("GEMINI_API_KEY"))
+                    .unwrap_or_default(),
                 model: std::env::var("LLM_MODEL")
                     .unwrap_or_else(|_| "gemini-2.0-flash".to_string()),
                 embedding_model: std::env::var("EMBEDDING_MODEL")
-                    .unwrap_or_else(|_| "text-embedding-004".to_string()),
+                    .unwrap_or_else(|_| "embedding-001".to_string()),
                 max_tokens: std::env::var("LLM_MAX_TOKENS")
                     .unwrap_or_else(|_| "4096".to_string())
                     .parse()?,

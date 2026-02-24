@@ -62,7 +62,7 @@ impl IngestionService {
 
         let doc: Option<DocumentRecord> = match self
             .db
-            .query("SELECT * FROM type::thing($id)")
+            .query("SELECT * FROM type::record($id)")
             .bind(("id", document_id.clone()))
             .await
         {
@@ -95,7 +95,7 @@ impl IngestionService {
         // Persist the sha256 on the document record
         if let Err(e) = self
             .db
-            .query("UPDATE type::thing($id) SET sha256 = $sha256")
+            .query("UPDATE type::record($id) SET sha256 = $sha256")
             .bind(("id", document_id.clone()))
             .bind(("sha256", sha256.clone()))
             .await
@@ -169,7 +169,7 @@ impl IngestionService {
         if let Err(e) = self
             .db
             .query(
-                "UPDATE type::thing($id) SET chunk_count = $count, upload_status = 'completed'",
+                "UPDATE type::record($id) SET chunk_count = $count, upload_status = 'completed'",
             )
             .bind(("id", document_id.clone()))
             .bind(("count", chunk_count))
@@ -235,8 +235,8 @@ impl IngestionService {
         self.db
             .query(
                 "CREATE chunk SET \
-                    document = type::thing($doc_id), \
-                    notebook = type::thing($nb_id), \
+                    document = type::record($doc_id), \
+                    notebook = type::record($nb_id), \
                     content = $content, \
                     chunk_index = $idx, \
                     metadata = $meta, \
@@ -296,8 +296,8 @@ impl IngestionService {
             .query(
                 "CREATE doc_image SET \
                     image_id = $image_id, \
-                    document = type::thing($doc_id), \
-                    notebook = type::thing($nb_id), \
+                    document = type::record($doc_id), \
+                    notebook = type::record($nb_id), \
                     mime_type = $mime, \
                     source_ref = $source_ref, \
                     stored_path = $stored_path",
@@ -319,7 +319,7 @@ impl IngestionService {
     async fn find_duplicate(&self, sha256: &str, exclude_id: &str) -> Option<DocumentRecord> {
         let result: Vec<DocumentRecord> = match self
             .db
-            .query("SELECT * FROM document WHERE sha256 = $sha256 AND upload_status = 'completed' AND id != type::thing($id) LIMIT 1")
+            .query("SELECT * FROM document WHERE sha256 = $sha256 AND upload_status = 'completed' AND id != type::record($id) LIMIT 1")
             .bind(("sha256", sha256.to_string()))
             .bind(("id", exclude_id.to_string()))
             .await
@@ -352,31 +352,31 @@ impl IngestionService {
             "
             BEGIN TRANSACTION;
 
-            LET $source_chunks = (SELECT content, chunk_index, metadata, embedding FROM chunk WHERE document = type::thing('{}'));
+            LET $source_chunks = (SELECT content, chunk_index, metadata, embedding FROM chunk WHERE document = type::record('{}'));
 
             FOR $chunk IN $source_chunks {{
                 CREATE chunk SET
-                    document = type::thing('{}'),
-                    notebook = type::thing('{}'),
+                    document = type::record('{}'),
+                    notebook = type::record('{}'),
                     content = $chunk.content,
                     chunk_index = $chunk.chunk_index,
                     metadata = $chunk.metadata,
                     embedding = $chunk.embedding;
             }};
 
-            LET $source_images = (SELECT image_id, mime_type, source_ref, stored_path FROM doc_image WHERE document = type::thing('{}'));
+            LET $source_images = (SELECT image_id, mime_type, source_ref, stored_path FROM doc_image WHERE document = type::record('{}'));
 
             FOR $img IN $source_images {{
                 CREATE doc_image SET
                     image_id = $img.image_id,
-                    document = type::thing('{}'),
-                    notebook = type::thing('{}'),
+                    document = type::record('{}'),
+                    notebook = type::record('{}'),
                     mime_type = $img.mime_type,
                     source_ref = $img.source_ref,
                     stored_path = $img.stored_path;
             }};
 
-            UPDATE type::thing('{}') SET chunk_count = type::number((SELECT count() FROM chunk WHERE document = type::thing('{}'))[0].count);
+            UPDATE type::record('{}') SET chunk_count = type::number((SELECT count() FROM chunk WHERE document = type::record('{}'))[0].count);
 
             COMMIT TRANSACTION;
             ",
@@ -401,7 +401,7 @@ impl IngestionService {
     async fn mark_status(&self, id: &str, status: &str) {
         if let Err(e) = self
             .db
-            .query("UPDATE type::thing($id) SET upload_status = $status")
+            .query("UPDATE type::record($id) SET upload_status = $status")
             .bind(("id", id.to_string()))
             .bind(("status", status.to_string()))
             .await

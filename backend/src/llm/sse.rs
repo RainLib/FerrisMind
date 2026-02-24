@@ -38,7 +38,7 @@ pub async fn chat_stream_handler(
 
     // Check if session belongs to user
     let session_exists: bool = db
-        .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
+        .query("SELECT * FROM type::record($session_id) WHERE user = type::record($user_id)")
         .bind(("session_id", session_id.clone()))
         .bind(("user_id", user_id))
         .await

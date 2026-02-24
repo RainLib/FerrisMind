@@ -5,7 +5,7 @@ use crate::config::JwtConfig;
 use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::guard::{
-    check_notebook_access, get_current_user, require_editor, require_owner,
+    check_notebook_access, decode_record_id, get_current_user, require_editor, require_owner,
 };
 use crate::graphql::types::*;
 use surrealdb_types::ToSql;
@@ -196,11 +196,11 @@ impl MutationRoot {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
 
-        require_editor(db, &claims.sub, &input.id)
+        let id = decode_record_id(&input.id);
+        require_editor(db, &claims.sub, &id)
             .await
             .map_err(|e| e.extend())?;
 
-        // Build dynamic update query
         let mut set_clauses = vec!["updated_at = time::now()".to_string()];
         if let Some(ref name) = input.name {
             set_clauses.push(format!("name = '{}'", name.replace('\'', "''")));
@@ -216,7 +216,7 @@ impl MutationRoot {
 
         let records: Vec<NotebookRecord> = db
             .query(&query)
-            .bind(("id", input.id.clone()))
+            .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -233,6 +233,7 @@ impl MutationRoot {
     async fn delete_notebook(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let id = decode_record_id(&id);
 
         require_owner(db, &claims.sub, &id)
             .await
@@ -250,8 +251,9 @@ impl MutationRoot {
     async fn invite_member(&self, ctx: &Context<'_>, input: InviteMemberInput) -> Result<bool> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&input.notebook_id);
 
-        require_owner(db, &claims.sub, &input.notebook_id)
+        require_owner(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
@@ -285,7 +287,7 @@ impl MutationRoot {
         let existing: Vec<AccessRecord> = db
             .query("SELECT * FROM has_access WHERE in = type::record($user_id) AND out = type::record($notebook_id)")
             .bind(("user_id", target_user_id.clone()))
-            .bind(("notebook_id", input.notebook_id.clone()))
+            .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -296,14 +298,14 @@ impl MutationRoot {
             db.query("UPDATE has_access SET role = $role WHERE in = type::record($user_id) AND out = type::record($notebook_id)")
                 .bind(("role", input.role.to_string()))
                 .bind(("user_id", target_user_id.clone()))
-                .bind(("notebook_id", input.notebook_id.clone()))
+                .bind(("notebook_id", notebook_id.clone()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?;
         } else {
             // Create new access relation
             db.query("LET $uid = type::record($user_id); LET $nid = type::record($notebook_id); RELATE $uid->has_access->$nid SET role = $role")
                 .bind(("user_id", target_user_id.clone()))
-                .bind(("notebook_id", input.notebook_id.clone()))
+                .bind(("notebook_id", notebook_id.clone()))
                 .bind(("role", input.role.to_string()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?;
@@ -329,12 +331,12 @@ impl MutationRoot {
     ) -> Result<Document> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         require_editor(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
-        // Validate source type
         if !["file", "url", "text"].contains(&source_type.as_str()) {
             return Err(AppError::BadRequest(
                 "Invalid source_type. Must be file, url, or text.".to_string(),
@@ -394,8 +396,8 @@ impl MutationRoot {
     async fn delete_document(&self, ctx: &Context<'_>, id: String) -> Result<bool> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let id = decode_record_id(&id);
 
-        // Get document to find notebook_id
         let doc: Option<DocumentRecord> = db
             .query("SELECT * FROM type::record($id)")
             .bind(("id", id.clone()))
@@ -437,10 +439,10 @@ impl MutationRoot {
     ) -> Result<DocumentSummary> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let document_id = decode_record_id(&document_id);
 
-        // Fetch document
         let doc: Option<DocumentRecord> = db
-            .query("SELECT * FROM type::thing($id)")
+            .query("SELECT * FROM type::record($id)")
             .bind(("id", document_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -463,7 +465,7 @@ impl MutationRoot {
 
         // Fetch all chunks ordered by index
         let chunks: Vec<ChunkRecord> = db
-            .query("SELECT * FROM chunk WHERE document = type::thing($doc_id) ORDER BY chunk_index ASC")
+            .query("SELECT * FROM chunk WHERE document = type::record($doc_id) ORDER BY chunk_index ASC")
             .bind(("doc_id", document_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -511,7 +513,7 @@ impl MutationRoot {
             .map_err(|e| AppError::Llm(format!("Summarization failed: {}", e)).extend())?;
 
         // Save summary to document record
-        db.query("UPDATE type::thing($id) SET summary = $summary")
+        db.query("UPDATE type::record($id) SET summary = $summary")
             .bind(("id", document_id.clone()))
             .bind(("summary", summary_text.clone()))
             .await
@@ -533,8 +535,9 @@ impl MutationRoot {
     ) -> Result<Session> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&input.notebook_id);
 
-        check_notebook_access(db, &claims.sub, &input.notebook_id)
+        check_notebook_access(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
@@ -542,7 +545,7 @@ impl MutationRoot {
             .query(
                 "CREATE session SET notebook = type::record($notebook_id), user = type::record($user_id), title = $title"
             )
-            .bind(("notebook_id", input.notebook_id.clone()))
+            .bind(("notebook_id", notebook_id.clone()))
             .bind(("user_id", claims.sub.clone()))
             .bind(("title", input.title.clone()))
             .await
@@ -561,11 +564,11 @@ impl MutationRoot {
     async fn send_message(&self, ctx: &Context<'_>, input: SendMessageInput) -> Result<Message> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let session_id = decode_record_id(&input.session_id);
 
-        // Verify session belongs to user
         let session: Option<SessionRecord> = db
             .query("SELECT * FROM type::record($session_id) WHERE user = type::record($user_id)")
-            .bind(("session_id", input.session_id.clone()))
+            .bind(("session_id", session_id.clone()))
             .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -581,7 +584,7 @@ impl MutationRoot {
             .query(
                 "CREATE message SET session = type::record($session_id), role = 'user', content = $content"
             )
-            .bind(("session_id", input.session_id.clone()))
+            .bind(("session_id", session_id.clone()))
             .bind(("content", input.content.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -590,7 +593,7 @@ impl MutationRoot {
 
         // Update session timestamp
         db.query("UPDATE type::record($session_id) SET updated_at = time::now()")
-            .bind(("session_id", input.session_id.clone()))
+            .bind(("session_id", session_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 

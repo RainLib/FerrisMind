@@ -75,6 +75,10 @@ async fn main() -> anyhow::Result<()> {
             post(crate::llm::sse::chat_stream_handler),
         )
         .route("/api/upload", post(crate::api::upload::upload_handler))
+        .route(
+            "/api/upload/url",
+            post(crate::api::upload_url::upload_url_handler),
+        )
         .layer(Extension(schema))
         .layer(Extension(config.jwt.clone()))
         .layer(Extension(config.ingest.clone()))

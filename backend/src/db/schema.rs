@@ -46,9 +46,21 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
         "DEFINE FIELD file_size ON document TYPE int;",
         "DEFINE FIELD upload_status ON document TYPE string ASSERT $value IN ['pending', 'processing', 'completed', 'failed'];",
         "DEFINE FIELD chunk_count ON document TYPE int DEFAULT 0;",
+        "DEFINE FIELD summary ON document TYPE option<string>;",
         "DEFINE FIELD created_at ON document TYPE datetime DEFAULT time::now();",
+        "DEFINE FIELD updated_at ON document TYPE datetime DEFAULT time::now();",
         "DEFINE INDEX idx_doc_notebook ON document FIELDS notebook;",
         "DEFINE INDEX idx_doc_sha256 ON document FIELDS sha256;",
+
+        // ── Document image table (extracted images from ingested docs) ──
+        "DEFINE TABLE doc_image SCHEMAFULL;",
+        "DEFINE FIELD image_id ON doc_image TYPE string;",
+        "DEFINE FIELD document ON doc_image TYPE record<document>;",
+        "DEFINE FIELD notebook ON doc_image TYPE record<notebook>;",
+        "DEFINE FIELD mime_type ON doc_image TYPE string;",
+        "DEFINE FIELD source_ref ON doc_image TYPE string;",
+        "DEFINE FIELD stored_path ON doc_image TYPE string;",
+        "DEFINE INDEX idx_doc_image_document ON doc_image FIELDS document;",
 
         // ── Chunk table ──
         "DEFINE TABLE chunk SCHEMAFULL;",
@@ -56,7 +68,7 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
         "DEFINE FIELD notebook ON chunk TYPE record<notebook>;",
         "DEFINE FIELD content ON chunk TYPE string;",
         "DEFINE FIELD chunk_index ON chunk TYPE int;",
-        "DEFINE FIELD metadata ON chunk TYPE option<object>;",
+        "DEFINE FIELD metadata ON chunk TYPE option<string>;",
         "DEFINE FIELD embedding ON chunk TYPE option<array<float>>;",
         "DEFINE FIELD created_at ON chunk TYPE datetime DEFAULT time::now();",
         "DEFINE INDEX idx_chunk_notebook ON chunk FIELDS notebook;",
@@ -94,5 +106,50 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
     }
 
     info!("Database schema applied successfully.");
+    Ok(())
+}
+
+/// Remove all application tables. Use only in test/dev to reset the database.
+/// Order: remove tables that reference others first.
+///
+/// To reset manually in SurrealDB SQL tab, run:
+/// ```sql
+/// REMOVE TABLE message;
+/// REMOVE TABLE session;
+/// REMOVE TABLE chunk;
+/// REMOVE TABLE doc_image;
+/// REMOVE TABLE document;
+/// REMOVE TABLE has_access;
+/// REMOVE TABLE notebook;
+/// REMOVE TABLE user;
+/// ```
+pub async fn remove_all_tables(db: &Surreal<Any>) -> anyhow::Result<()> {
+    info!("Removing all database tables...");
+
+    let tables = [
+        "message",
+        "session",
+        "chunk",
+        "doc_image",
+        "document",
+        "has_access",
+        "notebook",
+        "user",
+    ];
+
+    for table in tables {
+        let stmt = format!("REMOVE TABLE {table};");
+        info!("Executing: {}", stmt);
+        if let Err(e) = db.query(&stmt).await?.check() {
+            let msg = e.to_string();
+            if msg.contains("does not exist") || msg.contains("Unknown table") {
+                info!("Table {} does not exist, skipping", table);
+            } else {
+                return Err(e.into());
+            }
+        }
+    }
+
+    info!("All tables removed.");
     Ok(())
 }

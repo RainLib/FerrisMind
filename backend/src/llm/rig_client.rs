@@ -10,8 +10,8 @@ pub struct RigClient {
 
 impl RigClient {
     pub fn new(config: &LlmConfig) -> Self {
-        let gemini_client =
-            GeminiClient::new(&config.api_key).expect("Failed to initialize Gemini client");
+        let gemini_client = GeminiClient::new(config.api_key.as_str())
+            .expect("Failed to initialize Gemini client (check LLM_API_KEY or GEMINI_API_KEY)");
 
         Self {
             gemini_client,

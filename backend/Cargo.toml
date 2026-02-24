@@ -73,7 +73,9 @@ html2text = "0.13"
 tempfile = "3"
 mime_guess = "2"
 sha2 = "0.10"
+percent-encoding = "2"
 base64 = "0.22"
+calamine = "0.26"
 
 [dev-dependencies]
 tokio-test = "0.4.4"

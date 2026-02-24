@@ -2,7 +2,7 @@ use async_graphql::{Context, ErrorExtensions, Object, Result};
 
 use crate::db::Db;
 use crate::error::AppError;
-use crate::graphql::guard::{check_notebook_access, get_current_user};
+use crate::graphql::guard::{check_notebook_access, decode_record_id, get_current_user};
 use crate::graphql::types::*;
 use surrealdb_types::ToSql;
 
@@ -50,8 +50,8 @@ impl QueryRoot {
     async fn notebook(&self, ctx: &Context<'_>, id: String) -> Result<Notebook> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let id = decode_record_id(&id);
 
-        // Check access
         check_notebook_access(db, &claims.sub, &id)
             .await
             .map_err(|e| e.extend())?;
@@ -73,6 +73,7 @@ impl QueryRoot {
     async fn documents(&self, ctx: &Context<'_>, notebook_id: String) -> Result<Vec<Document>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         check_notebook_access(db, &claims.sub, &notebook_id)
             .await
@@ -93,6 +94,7 @@ impl QueryRoot {
     async fn sessions(&self, ctx: &Context<'_>, notebook_id: String) -> Result<Vec<Session>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         check_notebook_access(db, &claims.sub, &notebook_id)
             .await
@@ -121,6 +123,8 @@ impl QueryRoot {
         let db = ctx.data::<Db>()?;
 
         // Verify session belongs to user
+        let session_id = decode_record_id(&session_id);
+
         let session: Option<SessionRecord> = db
             .query("SELECT * FROM type::record($session_id) WHERE user = type::record($user_id)")
             .bind(("session_id", session_id.clone()))
@@ -163,9 +167,10 @@ impl QueryRoot {
         }
 
         let mut results = Vec::with_capacity(ids.len());
-        for id in &ids {
+        for raw_id in &ids {
+            let id = decode_record_id(raw_id);
             let record: Option<DocumentRecord> = db
-                .query("SELECT * FROM type::thing($id)")
+                .query("SELECT * FROM type::record($id)")
                 .bind(("id", id.clone()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -188,10 +193,10 @@ impl QueryRoot {
     ) -> Result<DocumentContent> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let document_id = decode_record_id(&document_id);
 
-        // Fetch document to get notebook_id for access check
         let doc: Option<DocumentRecord> = db
-            .query("SELECT * FROM type::thing($id)")
+            .query("SELECT * FROM type::record($id)")
             .bind(("id", document_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -207,7 +212,7 @@ impl QueryRoot {
 
         // Fetch chunks ordered by index
         let chunks: Vec<ChunkRecord> = db
-            .query("SELECT * FROM chunk WHERE document = type::thing($doc_id) ORDER BY chunk_index ASC")
+            .query("SELECT * FROM chunk WHERE document = type::record($doc_id) ORDER BY chunk_index ASC")
             .bind(("doc_id", document_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -216,7 +221,7 @@ impl QueryRoot {
 
         // Fetch images
         let images: Vec<DocImageRecord> = db
-            .query("SELECT * FROM doc_image WHERE document = type::thing($doc_id)")
+            .query("SELECT * FROM doc_image WHERE document = type::record($doc_id)")
             .bind(("doc_id", document_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -241,14 +246,15 @@ impl QueryRoot {
     ) -> Result<Vec<NotebookMember>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         check_notebook_access(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
-        // Query all access relations for this notebook, fetching user data
+        // Query all access relations for this notebook (no FETCH so in/out stay as record IDs)
         let records: Vec<AccessRecord> = db
-            .query("SELECT * FROM has_access WHERE out = type::record($notebook_id) FETCH in")
+            .query("SELECT * FROM has_access WHERE out = type::record($notebook_id)")
             .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
@@ -257,9 +263,13 @@ impl QueryRoot {
 
         let mut members = Vec::new();
         for record in records {
+            let user_id = match &record.r#in {
+                Some(r) => r.to_sql(),
+                None => continue,
+            };
             let user_record: Option<UserRecord> = db
                 .query("SELECT * FROM type::record($user_id)")
-                .bind(("user_id", record.r#in.to_sql()))
+                .bind(("user_id", user_id))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?
                 .take(0)

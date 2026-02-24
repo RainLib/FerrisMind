@@ -43,6 +43,11 @@ pub async fn init_db(config: &SurrealConfig) -> anyhow::Result<Db> {
         info!("Signed in to SurrealDB as {}", config.user);
     }
 
+    // Optional: reset all tables (test/dev only). Set RESET_DB=1 to drop and recreate.
+    if std::env::var("RESET_DB").as_deref() == Ok("1") {
+        schema::remove_all_tables(&db).await?;
+    }
+
     // Run schema migrations
     schema::apply_schema(&db).await?;
 
