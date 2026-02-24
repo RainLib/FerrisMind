@@ -17,6 +17,8 @@ pub mod error;
 pub mod graphql;
 pub mod ingest;
 pub mod llm;
+#[cfg(test)]
+pub mod test;
 
 use crate::auth::middleware::auth_middleware;
 use crate::config::AppConfig;
@@ -26,6 +28,11 @@ use crate::llm::manager::LlmManager;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Initialize rustls crypto provider (required for wss:// connections with rustls 0.23+)
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     // Initialize logging
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)

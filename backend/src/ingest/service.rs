@@ -5,6 +5,7 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::types::DocumentRecord;
 use crate::llm::manager::LlmManager;
+use surrealdb_types::ToSql;
 
 pub struct IngestionService {
     db: Db,
@@ -102,16 +103,12 @@ impl IngestionService {
             source_doc.chunk_count
         );
 
-        let notebook_id = new_doc.notebook.to_string();
-        let target_doc_id = new_doc
-            .id
-            .as_ref()
-            .map(|t| t.to_string())
-            .unwrap_or_default();
+        let notebook_id = new_doc.notebook.to_sql();
+        let target_doc_id = new_doc.id.as_ref().map(|t| t.to_sql()).unwrap_or_default();
         let source_doc_id = source_doc
             .id
             .as_ref()
-            .map(|t| t.to_string())
+            .map(|t| t.to_sql())
             .unwrap_or_default();
 
         let query = format!(

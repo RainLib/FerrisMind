@@ -19,7 +19,8 @@ async-graphql = { version = "7.0.15", features = ["uuid", "chrono", "dataloader"
 async-graphql-axum = "7.0.15"
 
 # SurrealDB
-surrealdb = { version = "2.2.1", features = ["kv-rocksdb"] }
+surrealdb = { version = "3.0.0", features = ["kv-rocksdb", "protocol-ws", "protocol-http"] }
+surrealdb-types = "3.0.0"
 
 # Authentication
 jsonwebtoken = "9.3.0"
@@ -35,6 +36,7 @@ chrono = { version = "0.4.40", features = ["serde"] }
 dotenvy = "0.15.7"
 thiserror = "2.0.12"
 anyhow = "1.0.96"
+rustls = { version = "0.23", features = ["ring"] }
 
 # Logging
 tracing = "0.1.41"

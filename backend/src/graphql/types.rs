@@ -1,20 +1,21 @@
 use async_graphql::{InputObject, SimpleObject};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb_types::{RecordId, SurrealValue, ToSql};
 
 // ─── Database Record Types (deserialized from SurrealDB) ───
 
 /// Generic SurrealDB Thing reference
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct ThingRef {
     pub tb: String,
     pub id: String,
 }
 
 /// User record from SurrealDB
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct UserRecord {
-    pub id: Option<surrealdb::sql::Thing>,
+    pub id: Option<RecordId>,
     pub username: String,
     pub email: String,
     pub password_hash: String,
@@ -24,32 +25,32 @@ pub struct UserRecord {
 }
 
 /// Notebook record from SurrealDB
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct NotebookRecord {
-    pub id: Option<surrealdb::sql::Thing>,
+    pub id: Option<RecordId>,
     pub name: String,
     pub description: Option<String>,
-    pub owner: surrealdb::sql::Thing,
+    pub owner: RecordId,
     pub is_deleted: bool,
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
 }
 
 /// Access relation record
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct AccessRecord {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub r#in: surrealdb::sql::Thing, // user
-    pub out: surrealdb::sql::Thing,  // notebook
+    pub id: Option<RecordId>,
+    pub r#in: RecordId, // user
+    pub out: RecordId,  // notebook
     pub role: String,
     pub granted_at: Option<DateTime<Utc>>,
 }
 
 /// Document record from SurrealDB
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct DocumentRecord {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub notebook: surrealdb::sql::Thing,
+    pub id: Option<RecordId>,
+    pub notebook: RecordId,
     pub filename: String,
     pub source_type: String,
     pub sha256: Option<String>,
@@ -63,21 +64,21 @@ pub struct DocumentRecord {
 }
 
 /// Session record from SurrealDB
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct SessionRecord {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub notebook: surrealdb::sql::Thing,
-    pub user: surrealdb::sql::Thing,
+    pub id: Option<RecordId>,
+    pub notebook: RecordId,
+    pub user: RecordId,
     pub title: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
 }
 
 /// Message record from SurrealDB
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct MessageRecord {
-    pub id: Option<surrealdb::sql::Thing>,
-    pub session: surrealdb::sql::Thing,
+    pub id: Option<RecordId>,
+    pub session: RecordId,
     pub role: String,
     pub content: String,
     pub metadata: Option<serde_json::Value>,
@@ -86,8 +87,8 @@ pub struct MessageRecord {
 
 // ─── GraphQL Output Types ───
 
-fn thing_to_string(thing: &Option<surrealdb::sql::Thing>) -> String {
-    thing.as_ref().map(|t| t.to_string()).unwrap_or_default()
+fn thing_to_string(thing: &Option<RecordId>) -> String {
+    thing.as_ref().map(|t| t.to_sql()).unwrap_or_default()
 }
 
 #[derive(SimpleObject, Debug, Clone)]
@@ -128,7 +129,7 @@ impl From<NotebookRecord> for Notebook {
             id: thing_to_string(&r.id),
             name: r.name,
             description: r.description,
-            owner_id: r.owner.to_string(),
+            owner_id: r.owner.to_sql(),
             is_deleted: r.is_deleted,
             created_at: r.created_at,
             updated_at: r.updated_at,
@@ -156,7 +157,7 @@ impl From<DocumentRecord> for Document {
     fn from(r: DocumentRecord) -> Self {
         Self {
             id: thing_to_string(&r.id),
-            notebook_id: r.notebook.to_string(),
+            notebook_id: r.notebook.to_sql(),
             filename: r.filename,
             source_type: r.source_type,
             sha256: r.sha256,
@@ -185,8 +186,8 @@ impl From<SessionRecord> for Session {
     fn from(r: SessionRecord) -> Self {
         Self {
             id: thing_to_string(&r.id),
-            notebook_id: r.notebook.to_string(),
-            user_id: r.user.to_string(),
+            notebook_id: r.notebook.to_sql(),
+            user_id: r.user.to_sql(),
             title: r.title,
             created_at: r.created_at,
             updated_at: r.updated_at,
@@ -208,7 +209,7 @@ impl From<MessageRecord> for Message {
     fn from(r: MessageRecord) -> Self {
         Self {
             id: thing_to_string(&r.id),
-            session_id: r.session.to_string(),
+            session_id: r.session.to_sql(),
             role: r.role,
             content: r.content,
             metadata: r.metadata.map(|m| m.to_string()),

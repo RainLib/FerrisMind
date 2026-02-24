@@ -4,6 +4,7 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::guard::{check_notebook_access, get_current_user};
 use crate::graphql::types::*;
+use surrealdb_types::ToSql;
 
 pub struct QueryRoot;
 
@@ -171,7 +172,7 @@ impl QueryRoot {
         for record in records {
             let user_record: Option<UserRecord> = db
                 .query("SELECT * FROM type::thing($user_id)")
-                .bind(("user_id", record.r#in.to_string()))
+                .bind(("user_id", record.r#in.to_sql()))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?
                 .take(0)

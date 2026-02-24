@@ -22,6 +22,7 @@ pub struct SurrealConfig {
     pub pass: String,
     pub ns: String,
     pub db: String,
+    pub token: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -62,6 +63,7 @@ impl AppConfig {
                 pass: std::env::var("SURREAL_PASS").unwrap_or_else(|_| "root".to_string()),
                 ns: std::env::var("SURREAL_NS").unwrap_or_else(|_| "notebook".to_string()),
                 db: std::env::var("SURREAL_DB").unwrap_or_else(|_| "main".to_string()),
+                token: std::env::var("SURREAL_TOKEN").ok(),
             },
             jwt: JwtConfig {
                 secret: std::env::var("JWT_SECRET")

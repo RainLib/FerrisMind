@@ -8,6 +8,7 @@ use crate::graphql::guard::{
     check_notebook_access, get_current_user, require_editor, require_owner,
 };
 use crate::graphql::types::*;
+use surrealdb_types::ToSql;
 
 pub struct MutationRoot;
 
@@ -81,7 +82,7 @@ impl MutationRoot {
         let user_id = user_record
             .id
             .as_ref()
-            .map(|t| t.to_string())
+            .map(|t| t.to_sql())
             .unwrap_or_default();
 
         // Generate JWT
@@ -123,7 +124,7 @@ impl MutationRoot {
         let user_id = user_record
             .id
             .as_ref()
-            .map(|t| t.to_string())
+            .map(|t| t.to_sql())
             .unwrap_or_default();
 
         // Generate JWT
@@ -174,7 +175,7 @@ impl MutationRoot {
             .next()
             .ok_or_else(|| AppError::Internal("Failed to create notebook".to_string()).extend())?;
 
-        let nb_id = nb.id.as_ref().map(|t| t.to_string()).unwrap_or_default();
+        let nb_id = nb.id.as_ref().map(|t| t.to_sql()).unwrap_or_default();
 
         // Create owner access relation
         db.query(
@@ -279,7 +280,7 @@ impl MutationRoot {
         let target_user_id = target_user
             .id
             .as_ref()
-            .map(|t| t.to_string())
+            .map(|t| t.to_sql())
             .unwrap_or_default();
 
         // Check if already has access
@@ -373,7 +374,7 @@ impl MutationRoot {
             .next()
             .ok_or_else(|| AppError::Internal("Failed to create document".to_string()).extend())?;
 
-        let doc_id_string = doc.id.as_ref().map(|t| t.to_string()).unwrap_or_default();
+        let doc_id_string = doc.id.as_ref().map(|t| t.to_sql()).unwrap_or_default();
         if !doc_id_string.is_empty() {
             let llm = ctx
                 .data::<std::sync::Arc<crate::llm::manager::LlmManager>>()?
@@ -407,7 +408,7 @@ impl MutationRoot {
         let doc =
             doc.ok_or_else(|| AppError::NotFound("Document not found".to_string()).extend())?;
 
-        require_editor(db, &claims.sub, &doc.notebook.to_string())
+        require_editor(db, &claims.sub, &doc.notebook.to_sql())
             .await
             .map_err(|e| e.extend())?;
 
