@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { useState, useRef, useEffect } from "react";
 
 interface ChatPanelProps {
   isMobile?: boolean;
@@ -7,6 +8,28 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({}: ChatPanelProps) {
+  const [inputValue, setInputValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [inputValue]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      // Handle submit here
+      if (inputValue.trim()) {
+        console.log("Submit:", inputValue);
+        setInputValue("");
+      }
+    }
+  };
+
   const markdownContent = `
 These documents mainly explore the integration and application of **Large Language Models (LLM)** and **Agentic** architectures in modern recommendation systems.
 
@@ -146,8 +169,19 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
         <div className="max-w-3xl mx-auto">
           <div className="bg-white border border-black shadow-hard hover:shadow-hard-hover transition-all flex flex-col relative z-20">
             <textarea
-              className="w-full bg-transparent border-none text-black placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 py-4 resize-none h-16 outline-none"
-              placeholder="Ask a follow up question..."
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                const el = e.target;
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
+              }}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-transparent border-none text-black placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 py-4 resize-none outline-none overflow-y-auto"
+              style={{ minHeight: "80px", maxHeight: "300px" }}
+              placeholder="Ask a follow up question or share context..."
+              rows={3}
             ></textarea>
             <div className="flex items-center justify-between px-3 pb-3">
               <div className="flex gap-2">
@@ -160,7 +194,19 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
                   <span className="material-symbols-outlined icon-sm">mic</span>
                 </Button>
               </div>
-              <button className="p-2 bg-accent-main border border-black text-white hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm">
+              <button
+                className="p-2 bg-accent-main border border-black text-white hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                disabled={!inputValue.trim()}
+                onClick={() => {
+                  if (inputValue.trim()) {
+                    console.log("Submit:", inputValue);
+                    setInputValue("");
+                    if (textareaRef.current) {
+                      textareaRef.current.style.height = "auto";
+                    }
+                  }
+                }}
+              >
                 <span className="material-symbols-outlined icon-sm">
                   arrow_upward
                 </span>

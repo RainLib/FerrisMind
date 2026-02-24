@@ -167,40 +167,20 @@ interface LeftSidebarProps {
 export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
   const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
   const [activeDetailId, setActiveDetailId] = useState<string | null>(null);
-  const [sources, setSources] = useState<Source[]>([
-    {
-      id: "1",
-      icon: "picture_as_pdf",
-      title: "AWS Agentic AI",
-      sub: "Framework guidance",
-    },
-    {
-      id: "2",
-      icon: "article",
-      title: "Best Practices",
-      sub: "Building Systems",
-    },
-    {
-      id: "3",
-      icon: "code",
-      title: "Dhenara Agent DSL",
-      sub: "GitHub Repository",
-    },
-    {
-      id: "4",
-      icon: "article",
-      title: "Agent Skills",
-      sub: "Implementation Guide",
-    },
-    {
-      id: "5",
-      icon: "picture_as_pdf",
-      title: "LLM RecSys",
-      sub: "Multi-agent Arch",
-    },
-  ]);
+  // Default to empty for a new notebook to trigger the modal automatically
+  const [sources, setSources] = useState<Source[]>([]);
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(["1"]));
+  // Auto-open modal if no sources exist
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (sources.length === 0) {
+      // Use timeout to bypass synchronous setState in effect warning
+      timeoutId = setTimeout(() => setIsAddSourceModalOpen(true), 0);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [sources.length]);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const handleSelectToggle = (id: string) => {
     setSelectedIds((prev) => {

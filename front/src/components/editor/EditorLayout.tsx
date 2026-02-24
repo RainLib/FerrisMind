@@ -177,26 +177,27 @@ export function EditorLayout() {
       )}
 
       {/* Expanded Left Sidebar + Handle */}
-      {isLeftExpanded && (
-        <>
-          <div
-            style={{ width: `${leftWidth}px` }}
-            className="h-full bg-bg-sources overflow-hidden shrink-0 flex flex-col relative"
-          >
-            <LeftSidebar onToggle={toggleLeftSidebar} />
-            {isDraggingLeft && (
-              <div className="absolute inset-0 z-50 pointer-events-none" />
-            )}
-          </div>
-          <ResizeHandle
-            isDragging={isDraggingLeft}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setIsDraggingLeft(true);
-            }}
-          />
-        </>
-      )}
+      <div
+        style={{
+          width: `${leftWidth}px`,
+          display: isLeftExpanded ? "flex" : "none",
+        }}
+        className="h-full bg-bg-sources overflow-hidden shrink-0 flex-col relative"
+      >
+        <LeftSidebar onToggle={toggleLeftSidebar} />
+        {isDraggingLeft && (
+          <div className="absolute inset-0 z-50 pointer-events-none" />
+        )}
+      </div>
+      <div style={{ display: isLeftExpanded ? "block" : "none" }}>
+        <ResizeHandle
+          isDragging={isDraggingLeft}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDraggingLeft(true);
+          }}
+        />
+      </div>
 
       {/* Main Center Panel */}
       <div className="flex-1 min-w-0 h-full relative overflow-hidden bg-white">
@@ -209,30 +210,27 @@ export function EditorLayout() {
       </div>
 
       {/* Right Handle + Expanded Right Sidebar */}
-      {isRightExpanded && (
-        <>
-          <ResizeHandle
-            isDragging={isDraggingRight}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setIsDraggingRight(true);
-            }}
-          />
-          <div
-            style={{ width: `${rightWidth}px` }}
-            className="h-full relative overflow-hidden shrink-0 flex flex-col"
-          >
-            <RightSidebar
-              isExpanded={true}
-              onToggle={toggleRightSidebar}
-              isPanel
-            />
-            {isDraggingRight && (
-              <div className="absolute inset-0 z-50 pointer-events-none" />
-            )}
-          </div>
-        </>
-      )}
+      <div style={{ display: isRightExpanded ? "block" : "none" }}>
+        <ResizeHandle
+          isDragging={isDraggingRight}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDraggingRight(true);
+          }}
+        />
+      </div>
+      <div
+        style={{
+          width: `${rightWidth}px`,
+          display: isRightExpanded ? "flex" : "none",
+        }}
+        className="h-full relative overflow-hidden shrink-0 flex-col"
+      >
+        <RightSidebar isExpanded={true} onToggle={toggleRightSidebar} isPanel />
+        {isDraggingRight && (
+          <div className="absolute inset-0 z-50 pointer-events-none" />
+        )}
+      </div>
 
       {/* Fixed Collapsed Right Strip */}
       {!isRightExpanded && (
