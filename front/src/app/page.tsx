@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/logo";
 import {
   fetchGraphQL,
@@ -34,6 +35,7 @@ const mapToUI = (n: Notebook): NotebookUI => ({
 });
 
 export default function Home() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -111,7 +113,7 @@ export default function Home() {
     }>(CREATE_NOTEBOOK, { name: formName, description: formDescription });
     if (data) {
       setCreateModalOpen(false);
-      loadNotebooks();
+      router.push(`/notebook/${data.createNotebook.id}`);
     } else if (errors) {
       alert("Failed to create notebook: " + errors[0].message);
     }
@@ -321,7 +323,7 @@ export default function Home() {
                     <tr
                       key={n.id}
                       className="group table-row-hover transition-colors cursor-pointer"
-                      onClick={() => (window.location.href = "/editor")}
+                      onClick={() => router.push(`/notebook/${n.id}`)}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3 w-full h-full">
@@ -407,7 +409,7 @@ export default function Home() {
             ) : (
               filteredNotebooks.map((n) => (
                 <Link
-                  href="/editor"
+                  href={`/notebook/${n.id}`}
                   key={n.id}
                   className="group p-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-hard-sm hover:border-black hover:-translate-y-1 transition-all flex flex-col justify-between"
                 >
