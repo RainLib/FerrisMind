@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { PanelDetailView } from "./PanelDetailView";
 
 interface RightSidebarProps {
   isExpanded?: boolean;
@@ -14,6 +16,13 @@ export function RightSidebar({
   onToggle,
   isPanel,
 }: RightSidebarProps) {
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+
+  const handleToolClick = (toolId: string) => {
+    if (!isExpanded && onToggle) onToggle();
+    setActiveTool(toolId);
+  };
+
   return (
     <aside
       className={cn(
@@ -61,9 +70,7 @@ export function RightSidebar({
         >
           {/* Audio Tool */}
           <button
-            onClick={() => {
-              if (!isExpanded && onToggle) onToggle();
-            }}
+            onClick={() => handleToolClick("audio")}
             className={cn(
               "relative flex p-3 bg-orange-50/60 border border-orange-200 rounded-sm hover:border-orange-500 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-orange group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -93,9 +100,7 @@ export function RightSidebar({
 
           {/* Video Tool */}
           <button
-            onClick={() => {
-              if (!isExpanded && onToggle) onToggle();
-            }}
+            onClick={() => handleToolClick("video")}
             className={cn(
               "relative flex p-3 bg-cyan-50/60 border border-cyan-200 rounded-sm hover:border-cyan-500 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-blue group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -125,9 +130,7 @@ export function RightSidebar({
 
           {/* Brief Tool */}
           <button
-            onClick={() => {
-              if (!isExpanded && onToggle) onToggle();
-            }}
+            onClick={() => handleToolClick("brief")}
             className={cn(
               "relative flex p-3 bg-emerald-50/60 border border-emerald-200 rounded-sm hover:border-emerald-600 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-green group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -157,9 +160,7 @@ export function RightSidebar({
 
           {/* Cards Tool */}
           <button
-            onClick={() => {
-              if (!isExpanded && onToggle) onToggle();
-            }}
+            onClick={() => handleToolClick("cards")}
             className={cn(
               "relative flex p-3 bg-violet-50/60 border border-violet-200 rounded-sm hover:border-violet-600 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-purple group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
@@ -227,7 +228,7 @@ export function RightSidebar({
 
       <div
         className={cn(
-          "absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none",
+          "absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-10",
         )}
       >
         {isExpanded ? (
@@ -241,6 +242,115 @@ export function RightSidebar({
           </button>
         )}
       </div>
+
+      {isExpanded && activeTool === "audio" && (
+        <PanelDetailView
+          title="Audio Studio"
+          icon="graphic_eq"
+          onBack={() => setActiveTool(null)}
+        >
+          <div className="p-5 flex flex-col gap-4">
+            <div className="p-4 bg-orange-50/50 border border-orange-200 rounded-sm">
+              <h3 className="text-sm font-bold text-orange-800 mb-2">
+                Voice Generation
+              </h3>
+              <p className="text-xs text-orange-600/80 mb-4">
+                Generate podcast-style discussions or audio summaries from your
+                sources.
+              </p>
+              <button className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-sm transition-colors shadow-sm">
+                Generate Audio
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">
+                Options
+              </h4>
+              <div className="p-3 bg-white border border-gray-200 shadow-sm flex items-center justify-between">
+                <span className="text-xs font-medium">Voice Clone</span>
+                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 font-bold uppercase">
+                  Pro
+                </span>
+              </div>
+              <div className="p-3 bg-white border border-gray-200 shadow-sm flex items-center justify-between">
+                <span className="text-xs font-medium">Background Music</span>
+                <span className="material-symbols-outlined icon-sm text-gray-400">
+                  toggle_off
+                </span>
+              </div>
+            </div>
+          </div>
+        </PanelDetailView>
+      )}
+
+      {isExpanded && activeTool === "video" && (
+        <PanelDetailView
+          title="Video Studio"
+          icon="smart_display"
+          onBack={() => setActiveTool(null)}
+        >
+          <div className="p-5 flex flex-col gap-4">
+            <div className="p-4 bg-cyan-50/50 border border-cyan-200 rounded-sm">
+              <h3 className="text-sm font-bold text-cyan-800 mb-2">
+                Video Generation
+              </h3>
+              <p className="text-xs text-cyan-600/80 mb-4">
+                Create short explainer videos generated directly from your
+                notes.
+              </p>
+              <button className="w-full py-2 bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-xs rounded-sm transition-colors shadow-sm">
+                Generate Video
+              </button>
+            </div>
+          </div>
+        </PanelDetailView>
+      )}
+
+      {isExpanded && activeTool === "brief" && (
+        <PanelDetailView
+          title="Brief Generator"
+          icon="summarize"
+          onBack={() => setActiveTool(null)}
+        >
+          <div className="p-5 flex flex-col gap-4">
+            <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-sm">
+              <h3 className="text-sm font-bold text-emerald-800 mb-2">
+                Executive Brief
+              </h3>
+              <p className="text-xs text-emerald-600/80 mb-4">
+                Synthesize all your sources into a quick, readable summary
+                document.
+              </p>
+              <button className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-sm transition-colors shadow-sm">
+                Create Brief
+              </button>
+            </div>
+          </div>
+        </PanelDetailView>
+      )}
+
+      {isExpanded && activeTool === "cards" && (
+        <PanelDetailView
+          title="Flashcards"
+          icon="style"
+          onBack={() => setActiveTool(null)}
+        >
+          <div className="p-5 flex flex-col gap-4">
+            <div className="p-4 bg-violet-50/50 border border-violet-200 rounded-sm">
+              <h3 className="text-sm font-bold text-violet-800 mb-2">
+                Study Cards
+              </h3>
+              <p className="text-xs text-violet-600/80 mb-4">
+                Automatically generate flashcards and FAQs for active recall.
+              </p>
+              <button className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-sm transition-colors shadow-sm">
+                Generate Cards
+              </button>
+            </div>
+          </div>
+        </PanelDetailView>
+      )}
     </aside>
   );
 }

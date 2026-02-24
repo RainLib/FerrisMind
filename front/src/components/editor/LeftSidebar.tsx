@@ -2,6 +2,7 @@ import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AddSourceModal } from "@/components/editor/AddSourceModal";
+import { PanelDetailView } from "./PanelDetailView";
 
 interface Source {
   id: string;
@@ -14,6 +15,7 @@ interface SourceItemProps {
   source: Source;
   selected: boolean;
   onSelectToggle: (id: string) => void;
+  onItemClick: (id: string) => void;
   onDelete: (id: string) => void;
   onRename: (id: string, newTitle: string) => void;
 }
@@ -22,6 +24,7 @@ function SourceItem({
   source,
   selected,
   onSelectToggle,
+  onItemClick,
   onDelete,
   onRename,
 }: SourceItemProps) {
@@ -60,10 +63,16 @@ function SourceItem({
           ? "border-l-2 border-l-accent-main border-y border-r border-gray-200 hover:border-black"
           : "border border-gray-200 hover:border-black"
       }`}
-      onClick={() => onSelectToggle(source.id)}
+      onClick={() => onItemClick(source.id)}
     >
       {/* Checkbox */}
-      <div className="shrink-0 flex items-center justify-center">
+      <div
+        className="shrink-0 flex items-center justify-center p-1 -m-1"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectToggle(source.id);
+        }}
+      >
         <div
           className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${
             selected
@@ -157,6 +166,7 @@ interface LeftSidebarProps {
 
 export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
   const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
+  const [activeDetailId, setActiveDetailId] = useState<string | null>(null);
   const [sources, setSources] = useState<Source[]>([
     {
       id: "1",
@@ -230,8 +240,10 @@ export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
     }
   };
 
+  const activeSource = sources.find((s) => s.id === activeDetailId);
+
   return (
-    <aside className="w-full h-full flex flex-col bg-bg-sources border-r border-border-bold">
+    <aside className="w-full h-full flex flex-col bg-bg-sources border-r border-border-bold relative overflow-hidden">
       <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-sources shrink-0">
         <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest overflow-hidden whitespace-nowrap text-ellipsis">
           Sources
@@ -306,11 +318,88 @@ export function LeftSidebar({ isMobile, onToggle }: LeftSidebarProps) {
             source={source}
             selected={selectedIds.has(source.id)}
             onSelectToggle={handleSelectToggle}
+            onItemClick={(id) => setActiveDetailId(id)}
             onDelete={handleDelete}
             onRename={handleRename}
           />
         ))}
       </div>
+
+      {activeDetailId && activeSource && (
+        <PanelDetailView
+          title={activeSource.title}
+          icon={activeSource.icon}
+          onBack={() => setActiveDetailId(null)}
+          headerActions={
+            <Button variant="icon" title="Source Settings">
+              <span className="material-symbols-outlined icon-sm">
+                settings
+              </span>
+            </Button>
+          }
+        >
+          <div className="p-5 flex flex-col gap-6">
+            {/* Summary Section */}
+            <div>
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">
+                Summary
+              </h3>
+              <p className="text-sm text-gray-800 leading-relaxed font-medium">
+                This document <strong>{activeSource.title}</strong> covers
+                essential concepts regarding {activeSource.sub.toLowerCase()}.
+                It provides an overview of best practices, key metrics, and
+                actionable insights for building robust systems based on the
+                uploaded content.
+              </p>
+            </div>
+
+            {/* Key Topics Section */}
+            <div>
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">
+                Key Topics
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "System Architecture",
+                  "Best Practices",
+                  "Integration",
+                  "Security Considerations",
+                  "Performance",
+                ].map((topic, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1.5 bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 hover:border-black hover:text-black cursor-pointer transition-colors shadow-sm"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Suggested Actions/Questions */}
+            <div className="pt-2">
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">
+                Suggested actions
+              </h3>
+              <div className="flex flex-col gap-2">
+                <button className="text-left px-4 py-3 bg-white border border-gray-200 hover:border-black shadow-sm hover:shadow-hard-sm transition-all text-sm font-bold text-gray-800 group flex items-center justify-between">
+                  <span>Help me understand this document</span>
+                  <span className="material-symbols-outlined icon-sm text-gray-400 group-hover:text-black transition-colors">
+                    arrow_forward
+                  </span>
+                </button>
+                <button className="text-left px-4 py-3 bg-white border border-gray-200 hover:border-black shadow-sm hover:shadow-hard-sm transition-all text-sm font-bold text-gray-800 group flex items-center justify-between">
+                  <span>Critique the concepts proposed here</span>
+                  <span className="material-symbols-outlined icon-sm text-gray-400 group-hover:text-black transition-colors">
+                    arrow_forward
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </PanelDetailView>
+      )}
+
       <AddSourceModal
         isOpen={isAddSourceModalOpen}
         onClose={() => setIsAddSourceModalOpen(false)}
