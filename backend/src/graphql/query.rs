@@ -146,6 +146,93 @@ impl QueryRoot {
         Ok(records.into_iter().map(Message::from).collect())
     }
 
+    // ─── Document Content & Upload Status ───
+
+    /// Batch-poll upload statuses. Pass a list of document IDs and get back
+    /// their current processing state. Ideal for frontend progress bars.
+    async fn document_upload_statuses(
+        &self,
+        ctx: &Context<'_>,
+        ids: Vec<String>,
+    ) -> Result<Vec<DocumentUploadStatus>> {
+        let _claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut results = Vec::with_capacity(ids.len());
+        for id in &ids {
+            let record: Option<DocumentRecord> = db
+                .query("SELECT * FROM type::thing($id)")
+                .bind(("id", id.clone()))
+                .await
+                .map_err(|e| AppError::Database(e.to_string()).extend())?
+                .take(0)
+                .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+            if let Some(r) = record {
+                results.push(DocumentUploadStatus::from(r));
+            }
+        }
+
+        Ok(results)
+    }
+
+    /// Get the full parsed content (chunks + images) for a document.
+    async fn document_content(
+        &self,
+        ctx: &Context<'_>,
+        document_id: String,
+    ) -> Result<DocumentContent> {
+        let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+
+        // Fetch document to get notebook_id for access check
+        let doc: Option<DocumentRecord> = db
+            .query("SELECT * FROM type::thing($id)")
+            .bind(("id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let doc =
+            doc.ok_or_else(|| AppError::NotFound("Document not found".to_string()).extend())?;
+
+        check_notebook_access(db, &claims.sub, &doc.notebook.to_sql())
+            .await
+            .map_err(|e| e.extend())?;
+
+        // Fetch chunks ordered by index
+        let chunks: Vec<ChunkRecord> = db
+            .query("SELECT * FROM chunk WHERE document = type::thing($doc_id) ORDER BY chunk_index ASC")
+            .bind(("doc_id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        // Fetch images
+        let images: Vec<DocImageRecord> = db
+            .query("SELECT * FROM doc_image WHERE document = type::thing($doc_id)")
+            .bind(("doc_id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        Ok(DocumentContent {
+            document_id: document_id.clone(),
+            filename: doc.filename,
+            upload_status: doc.upload_status,
+            summary: doc.summary,
+            chunks: chunks.into_iter().map(DocumentChunk::from).collect(),
+            images: images.into_iter().map(DocumentImage::from).collect(),
+        })
+    }
+
     /// List members of a notebook (with access check).
     async fn notebook_members(
         &self,

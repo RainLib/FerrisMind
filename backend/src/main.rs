@@ -10,6 +10,7 @@ use tower_http::trace::TraceLayer;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
+pub mod api;
 pub mod auth;
 pub mod config;
 pub mod db;
@@ -52,7 +53,12 @@ async fn main() -> anyhow::Result<()> {
     let llm_manager = Arc::new(LlmManager::new(&config.llm));
 
     // Build GraphQL Schema
-    let schema = build_schema(db.clone(), config.jwt.clone(), llm_manager.clone());
+    let schema = build_schema(
+        db.clone(),
+        config.jwt.clone(),
+        llm_manager.clone(),
+        config.ingest.clone(),
+    );
 
     // Set up CORS
     let cors = CorsLayer::new()
@@ -68,8 +74,11 @@ async fn main() -> anyhow::Result<()> {
             "/api/chat/stream",
             post(crate::llm::sse::chat_stream_handler),
         )
+        .route("/api/upload", post(crate::api::upload::upload_handler))
         .layer(Extension(schema))
         .layer(Extension(config.jwt.clone()))
+        .layer(Extension(config.ingest.clone()))
+        .layer(Extension(db.clone()))
         .layer(Extension(llm_manager))
         .layer(middleware::from_fn(auth_middleware))
         .layer(TraceLayer::new_for_http())

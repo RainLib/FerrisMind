@@ -60,7 +60,31 @@ pub struct DocumentRecord {
     pub file_size: i64,
     pub upload_status: String,
     pub chunk_count: i64,
+    pub summary: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
+}
+
+/// Chunk record from SurrealDB
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+pub struct ChunkRecord {
+    pub id: Option<RecordId>,
+    pub document: RecordId,
+    pub notebook: RecordId,
+    pub content: String,
+    pub chunk_index: i64,
+    pub metadata: Option<String>,
+}
+
+/// Image record from SurrealDB
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+pub struct DocImageRecord {
+    pub id: Option<RecordId>,
+    pub image_id: String,
+    pub document: RecordId,
+    pub notebook: RecordId,
+    pub mime_type: String,
+    pub source_ref: String,
+    pub stored_path: String,
 }
 
 /// Session record from SurrealDB
@@ -145,11 +169,12 @@ pub struct Document {
     pub source_type: String,
     pub sha256: Option<String>,
     pub url: Option<String>,
-    pub parsing_rules: Option<String>, // Passed as JSON string to graphQL
+    pub parsing_rules: Option<String>,
     pub file_type: String,
     pub file_size: i64,
     pub upload_status: String,
     pub chunk_count: i64,
+    pub summary: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -167,9 +192,90 @@ impl From<DocumentRecord> for Document {
             file_size: r.file_size,
             upload_status: r.upload_status,
             chunk_count: r.chunk_count,
+            summary: r.summary,
             created_at: r.created_at,
         }
     }
+}
+
+// ─── Ingestion-specific output types ───
+
+/// Lightweight status object for batch polling during upload.
+#[derive(SimpleObject, Debug, Clone)]
+pub struct DocumentUploadStatus {
+    pub id: String,
+    pub filename: String,
+    pub upload_status: String,
+    pub chunk_count: i64,
+    pub sha256: Option<String>,
+}
+
+impl From<DocumentRecord> for DocumentUploadStatus {
+    fn from(r: DocumentRecord) -> Self {
+        Self {
+            id: thing_to_string(&r.id),
+            filename: r.filename,
+            upload_status: r.upload_status,
+            chunk_count: r.chunk_count,
+            sha256: r.sha256,
+        }
+    }
+}
+
+/// A single chunk returned to the frontend.
+#[derive(SimpleObject, Debug, Clone)]
+pub struct DocumentChunk {
+    pub index: i64,
+    pub content: String,
+    pub metadata: Option<String>,
+}
+
+impl From<ChunkRecord> for DocumentChunk {
+    fn from(r: ChunkRecord) -> Self {
+        Self {
+            index: r.chunk_index,
+            content: r.content,
+            metadata: r.metadata,
+        }
+    }
+}
+
+/// An image reference extracted from a document.
+#[derive(SimpleObject, Debug, Clone)]
+pub struct DocumentImage {
+    pub image_id: String,
+    pub mime_type: String,
+    pub source_ref: String,
+    pub stored_path: String,
+}
+
+impl From<DocImageRecord> for DocumentImage {
+    fn from(r: DocImageRecord) -> Self {
+        Self {
+            image_id: r.image_id,
+            mime_type: r.mime_type,
+            source_ref: r.source_ref,
+            stored_path: r.stored_path,
+        }
+    }
+}
+
+/// Full parsed content for a document (chunks + images).
+#[derive(SimpleObject, Debug, Clone)]
+pub struct DocumentContent {
+    pub document_id: String,
+    pub filename: String,
+    pub upload_status: String,
+    pub summary: Option<String>,
+    pub chunks: Vec<DocumentChunk>,
+    pub images: Vec<DocumentImage>,
+}
+
+/// Summary result returned after LLM summarization.
+#[derive(SimpleObject, Debug, Clone)]
+pub struct DocumentSummary {
+    pub document_id: String,
+    pub summary: String,
 }
 
 #[derive(SimpleObject, Debug, Clone)]

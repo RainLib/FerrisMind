@@ -377,8 +377,9 @@ impl MutationRoot {
             let llm = ctx
                 .data::<std::sync::Arc<crate::llm::manager::LlmManager>>()?
                 .clone();
+            let ingest_config = ctx.data::<crate::config::IngestConfig>()?;
             let ingest_service = std::sync::Arc::new(
-                crate::ingest::service::IngestionService::new(db.clone(), llm),
+                crate::ingest::service::IngestionService::new(db.clone(), llm, ingest_config),
             );
 
             tokio::spawn(async move {
@@ -422,6 +423,104 @@ impl MutationRoot {
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
         Ok(true)
+    }
+
+    // ─── Document Summarization ───
+
+    /// Summarize a document's parsed content using the LLM.
+    /// Concatenates all chunks, sends to the model with a summarization prompt,
+    /// saves the result on the document record, and returns it.
+    async fn summarize_document(
+        &self,
+        ctx: &Context<'_>,
+        document_id: String,
+    ) -> Result<DocumentSummary> {
+        let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+
+        // Fetch document
+        let doc: Option<DocumentRecord> = db
+            .query("SELECT * FROM type::thing($id)")
+            .bind(("id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let doc =
+            doc.ok_or_else(|| AppError::NotFound("Document not found".to_string()).extend())?;
+
+        require_editor(db, &claims.sub, &doc.notebook.to_sql())
+            .await
+            .map_err(|e| e.extend())?;
+
+        if doc.upload_status != "completed" {
+            return Err(AppError::BadRequest(
+                "Document is not yet fully processed".to_string(),
+            )
+            .extend());
+        }
+
+        // Fetch all chunks ordered by index
+        let chunks: Vec<ChunkRecord> = db
+            .query("SELECT * FROM chunk WHERE document = type::thing($doc_id) ORDER BY chunk_index ASC")
+            .bind(("doc_id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        if chunks.is_empty() {
+            return Err(AppError::BadRequest(
+                "Document has no parsed content to summarize".to_string(),
+            )
+            .extend());
+        }
+
+        // Concatenate chunks (truncate if too large for context window)
+        let max_chars: usize = 60_000;
+        let mut content = String::new();
+        for chunk in &chunks {
+            if content.len() + chunk.content.len() > max_chars {
+                content.push_str(&chunk.content[..max_chars.saturating_sub(content.len())]);
+                break;
+            }
+            content.push_str(&chunk.content);
+            content.push('\n');
+        }
+
+        // Call LLM to generate summary
+        let llm = ctx
+            .data::<std::sync::Arc<crate::llm::manager::LlmManager>>()?
+            .clone();
+
+        let preamble = format!(
+            "You are a document summarizer. The user has uploaded a document titled \"{}\".\n\
+             Provide a comprehensive yet concise summary (2-5 paragraphs) of its content.\n\
+             Focus on the key points, conclusions, and main arguments.\n\
+             Respond in the same language as the document content.",
+            doc.filename
+        );
+
+        let agent = llm.agent().preamble(&preamble).build();
+
+        use rig::completion::Prompt;
+        let summary_text = agent
+            .prompt(&content)
+            .await
+            .map_err(|e| AppError::Llm(format!("Summarization failed: {}", e)).extend())?;
+
+        // Save summary to document record
+        db.query("UPDATE type::thing($id) SET summary = $summary")
+            .bind(("id", document_id.clone()))
+            .bind(("summary", summary_text.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        Ok(DocumentSummary {
+            document_id,
+            summary: summary_text,
+        })
     }
 
     // ─── Session / Chat ───

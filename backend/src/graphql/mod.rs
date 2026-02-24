@@ -12,7 +12,7 @@ use axum::{
 
 use async_graphql::{EmptySubscription, Schema};
 
-use crate::config::JwtConfig;
+use crate::config::{IngestConfig, JwtConfig};
 use crate::db::Db;
 use crate::llm::manager::LlmManager;
 use std::sync::Arc;
@@ -23,11 +23,17 @@ pub use query::QueryRoot;
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 /// Build the GraphQL schema with database and config injected into context.
-pub fn build_schema(db: Db, jwt_config: JwtConfig, llm_manager: Arc<LlmManager>) -> AppSchema {
+pub fn build_schema(
+    db: Db,
+    jwt_config: JwtConfig,
+    llm_manager: Arc<LlmManager>,
+    ingest_config: IngestConfig,
+) -> AppSchema {
     Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(db)
         .data(jwt_config)
         .data(llm_manager)
+        .data(ingest_config)
         .finish()
 }
 

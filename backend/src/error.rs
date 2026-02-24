@@ -21,6 +21,8 @@ pub enum AppError {
     BadRequest(String),
     #[error("Conflict: {0}")]
     Conflict(String),
+    #[error("Ingest error: {0}")]
+    Ingest(String),
 }
 
 impl ErrorExtensions for AppError {
@@ -34,6 +36,7 @@ impl ErrorExtensions for AppError {
             AppError::Internal(_) => e.set("code", "INTERNAL_ERROR"),
             AppError::BadRequest(_) => e.set("code", "BAD_REQUEST"),
             AppError::Conflict(_) => e.set("code", "CONFLICT"),
+            AppError::Ingest(_) => e.set("code", "INGEST_ERROR"),
         })
     }
 }
@@ -55,6 +58,7 @@ impl IntoResponse for AppError {
             AppError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
             AppError::Conflict(msg) => (StatusCode::CONFLICT, msg),
+            AppError::Ingest(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg),
         };
 
         (status, message).into_response()

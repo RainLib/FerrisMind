@@ -7,6 +7,7 @@ pub struct AppConfig {
     pub jwt: JwtConfig,
     pub llm: LlmConfig,
     pub upload: UploadConfig,
+    pub ingest: IngestConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -43,6 +44,16 @@ pub struct LlmConfig {
 pub struct UploadConfig {
     pub dir: String,
     pub max_file_size_mb: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct IngestConfig {
+    /// Maximum characters per chunk (default: 1000).
+    pub chunk_size: usize,
+    /// Overlap ratio between chunks, 0.0 ~ 0.5 (default: 0.1 = 10%).
+    pub overlap_ratio: f64,
+    /// How many chunks to embed in a single batch request (default: 16).
+    pub embed_batch_size: usize,
 }
 
 impl AppConfig {
@@ -86,6 +97,17 @@ impl AppConfig {
                 dir: std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "./uploads".to_string()),
                 max_file_size_mb: std::env::var("MAX_FILE_SIZE_MB")
                     .unwrap_or_else(|_| "50".to_string())
+                    .parse()?,
+            },
+            ingest: IngestConfig {
+                chunk_size: std::env::var("INGEST_CHUNK_SIZE")
+                    .unwrap_or_else(|_| "1000".to_string())
+                    .parse()?,
+                overlap_ratio: std::env::var("INGEST_OVERLAP_RATIO")
+                    .unwrap_or_else(|_| "0.1".to_string())
+                    .parse()?,
+                embed_batch_size: std::env::var("INGEST_EMBED_BATCH_SIZE")
+                    .unwrap_or_else(|_| "16".to_string())
                     .parse()?,
             },
         })
