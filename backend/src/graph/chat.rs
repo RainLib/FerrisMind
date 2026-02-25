@@ -1,12 +1,11 @@
 use crate::db::Db;
 use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, SearchHit, StageSender};
-use crate::llm::manager::LlmManager;
+use crate::llm::manager::{stream_prompt_to_sse, LlmManager};
 use async_trait::async_trait;
 use graph_flow::{
     Context, FlowRunner, GraphBuilder, GraphError, InMemorySessionStorage, NextAction, Session,
     SessionStorage, Task, TaskResult,
 };
-use rig::completion::Prompt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use surrealdb_types::SurrealValue;
@@ -312,9 +311,9 @@ impl Task for ChatResponseTask {
 
         let agent = self.llm.agent().preamble(&system_prompt).build();
 
-        let response = agent.prompt(&data.message).await.map_err(|e| {
-            GraphError::TaskExecutionFailed(format!("Chat LLM call failed: {}", e))
-        })?;
+        let response = stream_prompt_to_sse(&agent, &data.message, &self.tx, "Chat LLM call")
+            .await
+            .map_err(GraphError::TaskExecutionFailed)?;
 
         data.response = response;
         ctx.set("data", data).await;

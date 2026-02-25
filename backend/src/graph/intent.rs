@@ -1,8 +1,7 @@
 use crate::graph::context::ChatFlowData;
-use crate::llm::manager::LlmManager;
+use crate::llm::manager::{prompt_with_retry, LlmManager};
 use async_trait::async_trait;
 use graph_flow::{Context, GraphError, NextAction, Task, TaskResult};
-use rig::completion::Prompt;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -79,9 +78,9 @@ impl Task for IntentTask {
         };
 
         let agent = self.llm.agent().build();
-        let raw = agent.prompt(&prompt_text).await.map_err(|e| {
-            GraphError::TaskExecutionFailed(format!("Intent classification LLM call failed: {}", e))
-        })?;
+        let raw = prompt_with_retry(&agent, &prompt_text, "Intent classification LLM call")
+            .await
+            .map_err(GraphError::TaskExecutionFailed)?;
 
         let trimmed = raw.trim().trim_start_matches("```json").trim_end_matches("```").trim();
 

@@ -2,13 +2,12 @@ use crate::db::Db;
 use crate::graph::context::{
     emit_stage, ChatFlowData, SearchHit, SearchStrategy, StageSender, SubAnswer,
 };
-use crate::llm::manager::LlmManager;
+use crate::llm::manager::{prompt_with_retry, stream_prompt_to_sse, LlmManager};
 use async_trait::async_trait;
 use graph_flow::{
     Context, FlowRunner, GraphBuilder, GraphError, InMemorySessionStorage, NextAction, Session,
     SessionStorage, Task, TaskResult,
 };
-use rig::completion::Prompt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use surrealdb_types::SurrealValue;
@@ -55,9 +54,9 @@ impl Task for AskEntryTask {
             })?;
 
         let agent = self.llm.agent().build();
-        let raw = agent.prompt(&prompt_text).await.map_err(|e| {
-            GraphError::TaskExecutionFailed(format!("AskEntry LLM call failed: {}", e))
-        })?;
+        let raw = prompt_with_retry(&agent, &prompt_text, "AskEntry LLM call")
+            .await
+            .map_err(GraphError::TaskExecutionFailed)?;
 
         let trimmed = raw
             .trim()
@@ -280,9 +279,9 @@ impl Task for AskQueryProcessTask {
                 })?;
 
             let agent = self.llm.agent().build();
-            let answer = agent.prompt(&prompt_text).await.map_err(|e| {
-                GraphError::TaskExecutionFailed(format!("QueryProcess LLM call failed: {}", e))
-            })?;
+            let answer = prompt_with_retry(&agent, &prompt_text, "QueryProcess LLM call")
+                .await
+                .map_err(GraphError::TaskExecutionFailed)?;
 
             sub_answers.push(SubAnswer {
                 term: query.term.clone(),
@@ -368,9 +367,10 @@ impl Task for AskFinalAnswerTask {
             })?;
 
         let agent = self.llm.agent().build();
-        let response = agent.prompt(&prompt_text).await.map_err(|e| {
-            GraphError::TaskExecutionFailed(format!("FinalAnswer LLM call failed: {}", e))
-        })?;
+        let response =
+            stream_prompt_to_sse(&agent, &prompt_text, &self.tx, "FinalAnswer LLM call")
+                .await
+                .map_err(GraphError::TaskExecutionFailed)?;
 
         data.response = response;
         ctx.set("data", data).await;

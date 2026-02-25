@@ -124,11 +124,6 @@ pub async fn chat_stream_handler(
                     .bind(("metadata", metadata))
                     .await;
 
-                for chunk in split_into_chunks(&result.response, 120) {
-                    let _ = tx.send(Ok(Event::default().data(chunk))).await;
-                    tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
-                }
-
                 let _ = tx
                     .send(Ok(Event::default()
                         .event("metadata")
@@ -239,22 +234,3 @@ async fn resolve_session(
     Ok(session_id)
 }
 
-fn split_into_chunks(text: &str, approx_chunk_size: usize) -> Vec<String> {
-    let mut chunks = Vec::new();
-    let mut current = String::new();
-
-    for word in text.split_whitespace() {
-        if current.len() + word.len() + 1 > approx_chunk_size && !current.is_empty() {
-            chunks.push(current.clone());
-            current.clear();
-        }
-        if !current.is_empty() {
-            current.push(' ');
-        }
-        current.push_str(word);
-    }
-    if !current.is_empty() {
-        chunks.push(current);
-    }
-    chunks
-}

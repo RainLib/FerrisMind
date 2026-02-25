@@ -91,6 +91,82 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
       let done = false;
       let buffer = "";
       let currentEvent = "message";
+      let dataLines: string[] = [];
+
+      const processEvent = (eventType: string, dataStr: string) => {
+        if (dataStr === "[DONE]") {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
+            ),
+          );
+          return;
+        }
+
+        if (eventType === "session") {
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.session_id) setSessionId(data.session_id);
+          } catch {
+            /* ignore */
+          }
+        } else if (eventType === "stage") {
+          try {
+            const data = JSON.parse(dataStr);
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.id === aiMsgId) {
+                  const stages = [...(msg.stages || []), data];
+                  return { ...msg, stages };
+                }
+                return msg;
+              }),
+            );
+          } catch {
+            /* ignore */
+          }
+        } else if (eventType === "metadata") {
+          try {
+            const data = JSON.parse(dataStr);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === aiMsgId ? { ...msg, metadata: data } : msg,
+              ),
+            );
+          } catch {
+            /* ignore */
+          }
+        } else if (eventType === "error") {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId
+                ? {
+                    ...msg,
+                    content:
+                      "Sorry, an error occurred while processing your request. Please try again.",
+                    isStreaming: false,
+                    metadata: { ...msg.metadata, error: dataStr },
+                  }
+                : msg,
+            ),
+          );
+          done = true;
+        } else if (eventType === "done") {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
+            ),
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId
+                ? { ...msg, content: msg.content + dataStr }
+                : msg,
+            ),
+          );
+        }
+      };
 
       while (!done) {
         const { value, done: readerDone } = await reader.read();
@@ -101,95 +177,22 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
           buffer = lines.pop() || "";
 
           for (const line of lines) {
+            if (done) break;
+
             if (line.startsWith("event: ")) {
               currentEvent = line.substring(7).trim();
             } else if (line.startsWith("event:")) {
               currentEvent = line.substring(6).trim();
             } else if (line.startsWith("data: ")) {
-              const dataStr = line.substring(6);
-              if (dataStr === "[DONE]") {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
-                  ),
-                );
-                continue;
-              }
-
-              if (currentEvent === "session") {
-                try {
-                  const data = JSON.parse(dataStr);
-                  if (data.session_id) setSessionId(data.session_id);
-                } catch {
-                  // ignore
-                }
-              } else if (currentEvent === "stage") {
-                try {
-                  const data = JSON.parse(dataStr);
-                  setMessages((prev) =>
-                    prev.map((msg) => {
-                      if (msg.id === aiMsgId) {
-                        const stages = [...(msg.stages || []), data];
-                        return { ...msg, stages };
-                      }
-                      return msg;
-                    }),
-                  );
-                } catch {
-                  // ignore
-                }
-              } else if (currentEvent === "metadata") {
-                try {
-                  const data = JSON.parse(dataStr);
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id === aiMsgId ? { ...msg, metadata: data } : msg,
-                    ),
-                  );
-                } catch {
-                  // ignore
-                }
-              } else if (currentEvent === "error") {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === aiMsgId
-                      ? {
-                          ...msg,
-                          content:
-                            "Sorry, an error occurred while processing your request. Please try again.",
-                          isStreaming: false,
-                          metadata: { ...msg.metadata, error: dataStr },
-                        }
-                      : msg,
-                  ),
-                );
-                done = true;
-                break;
-              } else if (currentEvent === "done") {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
-                  ),
-                );
-              } else {
-                let chunkText = dataStr;
-                try {
-                  if (chunkText.startsWith('"') && chunkText.endsWith('"')) {
-                    chunkText = JSON.parse(chunkText);
-                  }
-                } catch {
-                  // ignore
-                }
-
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === aiMsgId
-                      ? { ...msg, content: msg.content + chunkText }
-                      : msg,
-                  ),
-                );
-              }
+              dataLines.push(line.substring(6));
+            } else if (line.startsWith("data:")) {
+              dataLines.push(line.substring(5));
             } else if (line === "") {
+              if (dataLines.length > 0) {
+                const dataStr = dataLines.join("\n");
+                dataLines = [];
+                processEvent(currentEvent, dataStr);
+              }
               currentEvent = "message";
             }
           }
