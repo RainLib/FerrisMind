@@ -19,16 +19,22 @@ export interface ChatMessage {
 }
 
 export function ChatPanel({ notebookId }: ChatPanelProps) {
-  const { sources, selectedIds } = useNotebookStore();
+  const { sources, selectedIds, initialSessionId, initialMessages } =
+    useNotebookStore();
   const hasSources = sources.length > 0;
 
   const [inputValue, setInputValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    setSessionId(initialSessionId);
+    setMessages(initialMessages);
+  }, [initialSessionId, initialMessages]);
 
   // Auto-resize textarea based on content
   useEffect(() => {

@@ -49,6 +49,37 @@ export const GET_NOTEBOOK = `
   }
 `;
 
+export const GET_NOTEBOOK_INITIAL_DATA = `
+  query GetNotebookInitialData($notebookId: String!) {
+    notebook(id: $notebookId) {
+      id
+      name
+      description
+      createdAt
+      updatedAt
+    }
+    documents(notebookId: $notebookId) {
+      id
+      filename
+      uploadStatus
+      chunkCount
+      sha256
+      createdAt
+      updatedAt
+      summary
+    }
+    notebookChatHistory(notebookId: $notebookId, limit: 50, offset: 0) {
+      sessionId
+      messages {
+        id
+        role
+        content
+        createdAt
+      }
+    }
+  }
+`;
+
 // Mutations
 export const CREATE_NOTEBOOK = `
   mutation CreateNotebook($name: String!, $description: String) {
@@ -132,6 +163,12 @@ export const SUMMARIZE_DOCUMENT = `
   }
 `;
 
+export const DELETE_DOCUMENT = `
+  mutation DeleteDocument($id: String!) {
+    deleteDocument(id: $id)
+  }
+`;
+
 export type Notebook = {
   id: string;
   name: string;
@@ -171,4 +208,22 @@ export type DocumentContent = {
     sourceRef: string;
     storedPath: string;
   }[];
+};
+
+export type ChatHistoryMessage = {
+  id: string;
+  role: string;
+  content: string;
+  createdAt: string;
+};
+
+export type ChatHistoryPage = {
+  sessionId: string;
+  messages: ChatHistoryMessage[];
+};
+
+export type NotebookInitialData = {
+  notebook: Notebook | null;
+  documents: Document[];
+  notebookChatHistory: ChatHistoryPage;
 };

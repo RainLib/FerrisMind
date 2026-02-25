@@ -1,15 +1,14 @@
 import * as React from "react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AddSourceModal } from "@/components/editor/AddSourceModal";
 import { PanelDetailView } from "./PanelDetailView";
 import {
   fetchGraphQL,
-  GET_NOTEBOOK_DOCUMENTS,
   GET_DOCUMENT_UPLOAD_STATUSES,
   GET_DOCUMENT_CONTENT,
   SUMMARIZE_DOCUMENT,
-  Document,
+  DELETE_DOCUMENT,
   DocumentUploadStatus,
   DocumentContent,
 } from "@/lib/graphql";
@@ -210,19 +209,15 @@ function SourceItem({
             </div>
           </button>
         )}
-        {!isUploading && (
-          <button
-            onClick={() => onDelete(source.id)}
-            className="p-1 text-gray-400 hover:text-red-600 transition-colors relative group/btn"
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              delete
-            </span>
-            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover/btn:block">
-              Delete
-            </div>
-          </button>
-        )}
+        <button
+          onClick={() => onDelete(source.id)}
+          className="p-1 text-gray-400 hover:text-red-600 transition-colors relative group/btn"
+        >
+          <span className="material-symbols-outlined text-[16px]">delete</span>
+          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover/btn:block">
+            Delete
+          </div>
+        </button>
       </div>
     </div>
   );
@@ -248,40 +243,7 @@ export function LeftSidebar({
   const { sources, setSources, selectedIds, setSelectedIds, addSelectedId } =
     useNotebookStore();
 
-  // Load documents
-  const loadDocuments = useCallback(async () => {
-    try {
-      const { data, errors } = await fetchGraphQL<{ documents: Document[] }>(
-        GET_NOTEBOOK_DOCUMENTS,
-        { notebookId },
-      );
-
-      if (data?.documents) {
-        const newSources = data.documents.map((doc) => ({
-          id: doc.id,
-          icon: doc.filename.endsWith(".pdf")
-            ? "picture_as_pdf"
-            : "description",
-          title: doc.filename,
-          sub:
-            doc.uploadStatus === "completed"
-              ? `${Math.round(doc.chunkCount * 1.5)} words` // Rough estimate
-              : doc.uploadStatus,
-          rawStatus: doc.uploadStatus,
-        }));
-        setSources(newSources);
-
-        // If explicitly no sources, pop open the modal after a short delay
-        if (newSources.length === 0) {
-          setTimeout(() => setIsAddSourceModalOpen(true), 100);
-        }
-      } else if (errors) {
-        console.error("Failed to load documents:", errors);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [notebookId, setSources]);
+  // Removed redundant loadDocuments since it's fetched in GET_NOTEBOOK_INITIAL_DATA in page.tsx
 
   const handleUploadFiles = async (files: File[]) => {
     const tempSources = files.map((file) => ({
@@ -402,10 +364,6 @@ export function LeftSidebar({
       );
     }
   };
-
-  useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments, notebookId]);
 
   // Polling for upload statuses
   useEffect(() => {
@@ -533,13 +491,22 @@ export function LeftSidebar({
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // Optimistic UI update and polling stop
     setSources((prev) => prev.filter((s) => s.id !== id));
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
       return next;
     });
+
+    if (!id.startsWith("temp_")) {
+      try {
+        await fetchGraphQL(DELETE_DOCUMENT, { id });
+      } catch (e) {
+        console.error("Failed to delete document on backend", e);
+      }
+    }
   };
 
   const handleRename = (id: string, newTitle: string) => {

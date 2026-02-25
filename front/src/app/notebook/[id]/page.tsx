@@ -5,7 +5,12 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { fetchGraphQL, GET_NOTEBOOK, Notebook } from "@/lib/graphql";
+import {
+  fetchGraphQL,
+  GET_NOTEBOOK_INITIAL_DATA,
+  NotebookInitialData,
+} from "@/lib/graphql";
+import { useNotebookStore, ChatMessage } from "@/store/notebookStore";
 
 export default function Editor() {
   const params = useParams();
@@ -14,6 +19,8 @@ export default function Editor() {
   const [tempTitle, setTempTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { setSources, setInitialChat, setSelectedIds } = useNotebookStore();
+
   // Decode the ID in case it comes URL-encoded from useParams (e.g. notebook%3A123 -> notebook:123)
   const idRaw = params?.id as string;
   const decodedId = decodeURIComponent(idRaw || "");
@@ -21,20 +28,60 @@ export default function Editor() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { data, errors } = await fetchGraphQL<{ notebook: Notebook }>(
-          GET_NOTEBOOK,
-          { id: decodedId },
+        const { data, errors } = await fetchGraphQL<NotebookInitialData>(
+          GET_NOTEBOOK_INITIAL_DATA,
+          { notebookId: decodedId },
         );
         if (data?.notebook) {
           setTitle(data.notebook.name || "Untitled Notebook");
           setTempTitle(data.notebook.name || "Untitled Notebook");
+
+          // Hydrate the store with documents
+          const docs = data.documents || [];
+          const newSources = docs.map((doc) => ({
+            id: doc.id,
+            icon: doc.filename.endsWith(".pdf")
+              ? "picture_as_pdf"
+              : "description",
+            title: doc.filename,
+            sub:
+              doc.uploadStatus === "completed"
+                ? `${Math.round(doc.chunkCount * 1.5)} words`
+                : doc.uploadStatus,
+            rawStatus: doc.uploadStatus,
+          }));
+          setSources(newSources);
+
+          // Auto-select completed sources
+          const completedIds = new Set(
+            docs.filter((d) => d.uploadStatus === "completed").map((d) => d.id),
+          );
+          setSelectedIds(completedIds);
+
+          // Hydrate the store with the chat history
+          if (data.notebookChatHistory) {
+            const { sessionId, messages } = data.notebookChatHistory;
+            const chatMessages: ChatMessage[] = messages.map((m) => ({
+              id: m.id,
+              role: m.role as "user" | "assistant",
+              content: m.content,
+              isStreaming: false,
+            }));
+            setInitialChat(sessionId || null, chatMessages);
+          } else {
+            setInitialChat(null, []);
+          }
         } else if (errors) {
-          console.error("Failed to load notebook:", errors);
+          console.error("Failed to load notebook data:", errors);
           setTitle("Untitled Notebook");
           setTempTitle("Untitled Notebook");
+          setSources([]);
+          setInitialChat(null, []);
         } else {
           setTitle("Untitled Notebook");
           setTempTitle("Untitled Notebook");
+          setSources([]);
+          setInitialChat(null, []);
         }
       } catch (e) {
         console.error(e);
@@ -43,7 +90,7 @@ export default function Editor() {
     };
 
     loadData();
-  }, [decodedId]);
+  }, [decodedId, setInitialChat, setSelectedIds, setSources]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
