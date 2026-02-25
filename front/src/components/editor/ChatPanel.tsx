@@ -9,7 +9,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({}: ChatPanelProps) {
-  const { sources } = useNotebookStore();
+  const { sources, selectedIds } = useNotebookStore();
   const hasSources = sources.length > 0;
 
   const [inputValue, setInputValue] = useState("");
@@ -61,9 +61,12 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden sm:block">
             Chat
           </h2>
-          <div className="px-2 py-0.5 bg-accent-light text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm whitespace-nowrap">
-            9 sources active
-          </div>
+          {selectedIds.size > 0 && (
+            <div className="px-2 py-0.5 bg-accent-light text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm whitespace-nowrap">
+              {selectedIds.size} source{selectedIds.size === 1 ? "" : "s"}{" "}
+              active
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="icon" title="Tune" className="hidden sm:inline-flex">
@@ -201,15 +204,15 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
                 el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
               }}
               onKeyDown={handleKeyDown}
-              className={`w-full bg-transparent border-none text-black placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 ${hasSources ? "py-4" : "py-3"} resize-none outline-none overflow-y-auto`}
+              className={`w-full bg-transparent border-none text-black placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 ${hasSources ? "py-3" : "py-2"} resize-none outline-none overflow-y-auto`}
               style={{
-                minHeight: hasSources ? "80px" : "44px",
+                minHeight: hasSources ? "56px" : "40px",
                 maxHeight: "200px",
               }}
               placeholder="Ask a follow up question or share context..."
-              rows={3}
+              rows={1}
             ></textarea>
-            <div className="flex items-center justify-between px-3 pb-3">
+            <div className="flex items-center justify-between px-3 pb-2">
               <div className="flex gap-2">
                 <Button variant="icon" title="Add context">
                   <span className="material-symbols-outlined icon-sm">

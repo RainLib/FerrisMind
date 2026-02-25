@@ -5,6 +5,9 @@ use crate::graphql::types::AccessRecord;
 use async_graphql::Context;
 use percent_encoding::percent_decode_str;
 
+/// Mock user ID used when no JWT is present (development).
+pub const MOCK_DEV_USER_ID: &str = "user:mock_dev_user";
+
 /// Decode a record ID that may arrive percent-encoded from the frontend
 /// (e.g. `notebook%3Axyz` → `notebook:xyz`).
 pub fn decode_record_id(id: &str) -> String {
@@ -20,7 +23,7 @@ pub fn get_current_user(ctx: &Context<'_>) -> Result<Claims, AppError> {
 
     // fallback to mock user for development
     Ok(Claims {
-        sub: "user:mock_dev_user".to_string(),
+        sub: MOCK_DEV_USER_ID.to_string(),
         email: "dev@example.com".to_string(),
         username: "dev_user".to_string(),
         exp: 0,
@@ -30,11 +33,17 @@ pub fn get_current_user(ctx: &Context<'_>) -> Result<Claims, AppError> {
 
 /// Check if a user has access to a notebook.
 /// Returns the role (owner/editor/viewer) if access is granted.
+/// When the user is the mock dev user (no JWT), allow access to any notebook for local dev.
 pub async fn check_notebook_access(
     db: &Db,
     user_id: &str,
     notebook_id: &str,
 ) -> Result<String, AppError> {
+    // Dev: mock user can access any notebook (notebook may have been created with real JWT)
+    if user_id == MOCK_DEV_USER_ID {
+        return Ok("viewer".to_string());
+    }
+
     // Query the has_access relation
     let result: Vec<AccessRecord> = db
         .query("SELECT * FROM has_access WHERE in = type::record($user_id) AND out = type::record($notebook_id)")

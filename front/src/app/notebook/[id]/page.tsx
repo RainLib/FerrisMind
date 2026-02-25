@@ -9,7 +9,7 @@ import { fetchGraphQL, GET_NOTEBOOK, Notebook } from "@/lib/graphql";
 
 export default function Editor() {
   const params = useParams();
-  const [title, setTitle] = useState("Loading...");
+  const [title, setTitle] = useState("Untitled Notebook");
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,11 +26,15 @@ export default function Editor() {
           { id: decodedId },
         );
         if (data?.notebook) {
-          setTitle(data.notebook.name);
-          setTempTitle(data.notebook.name);
+          setTitle(data.notebook.name || "Untitled Notebook");
+          setTempTitle(data.notebook.name || "Untitled Notebook");
         } else if (errors) {
           console.error("Failed to load notebook:", errors);
-          setTitle("Error Loading Notebook");
+          setTitle("Untitled Notebook");
+          setTempTitle("Untitled Notebook");
+        } else {
+          setTitle("Untitled Notebook");
+          setTempTitle("Untitled Notebook");
         }
       } catch (e) {
         console.error(e);

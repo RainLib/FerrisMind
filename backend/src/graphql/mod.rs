@@ -12,6 +12,7 @@ use axum::{
 
 use async_graphql::{EmptySubscription, Schema};
 
+use crate::auth::middleware::OptionalAuth;
 use crate::config::{IngestConfig, JwtConfig};
 use crate::db::Db;
 use crate::llm::manager::LlmManager;
@@ -37,8 +38,16 @@ pub fn build_schema(
         .finish()
 }
 
-pub async fn graphql_handler(schema: Extension<AppSchema>, req: GraphQLRequest) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
+pub async fn graphql_handler(
+    schema: Extension<AppSchema>,
+    auth: OptionalAuth,
+    req: GraphQLRequest,
+) -> GraphQLResponse {
+    let mut gql_req = req.into_inner();
+    if let Some(claims) = auth.0 {
+        gql_req = gql_req.data(claims);
+    }
+    schema.execute(gql_req).await.into()
 }
 
 pub async fn graphiql_handler() -> impl IntoResponse {
