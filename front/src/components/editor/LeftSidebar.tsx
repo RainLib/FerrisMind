@@ -86,31 +86,6 @@ function SourceItem({
         if (isReady) onItemClick(source.id);
       }}
     >
-      {/* Checkbox */}
-      {isReady && (
-        <div
-          className="shrink-0 flex items-center justify-center p-1 -m-1 cursor-pointer"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectToggle(source.id);
-          }}
-        >
-          <div
-            className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${
-              selected
-                ? "bg-accent-main border-accent-main text-white"
-                : "border-gray-300 bg-white group-hover:border-black"
-            }`}
-          >
-            {selected && (
-              <span className="material-symbols-outlined text-[12px] font-bold">
-                check
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
       <div
         className={`p-1.5 rounded-sm shrink-0 flex items-center justify-center ${
           selected
@@ -219,6 +194,31 @@ function SourceItem({
           </div>
         </button>
       </div>
+
+      {/* Checkbox moved to the right */}
+      {isReady && (
+        <div
+          className="shrink-0 flex items-center justify-center p-1 -m-1 ml-1 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectToggle(source.id);
+          }}
+        >
+          <div
+            className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${
+              selected
+                ? "bg-accent-main border-accent-main text-white"
+                : "border-gray-300 bg-white group-hover:border-black"
+            }`}
+          >
+            {selected && (
+              <span className="material-symbols-outlined text-[12px] font-bold">
+                check
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -234,14 +234,20 @@ export function LeftSidebar({
   onToggle,
   notebookId,
 }: LeftSidebarProps) {
-  const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
   const [activeDetailId, setActiveDetailId] = useState<string | null>(null);
   const [documentContent, setDocumentContent] =
     useState<DocumentContent | null>(null);
   const [isContentLoading, setIsContentLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const { sources, setSources, selectedIds, setSelectedIds, addSelectedId } =
-    useNotebookStore();
+  const {
+    sources,
+    setSources,
+    selectedIds,
+    setSelectedIds,
+    addSelectedId,
+    isAddSourceModalOpen,
+    setIsAddSourceModalOpen,
+  } = useNotebookStore();
 
   // Removed redundant loadDocuments since it's fetched in GET_NOTEBOOK_INITIAL_DATA in page.tsx
 
@@ -559,7 +565,8 @@ export function LeftSidebar({
           </Button>
         </div>
       </div>
-      <div className="px-5 py-5 space-y-4">
+      <div className="px-5 py-4 space-y-4">
+        {/* Restored Add Sources Button */}
         <button
           onClick={() => setIsAddSourceModalOpen(true)}
           className="w-full py-3 px-4 bg-white border border-dashed border-black shadow-sm hover:shadow-md hover:border-solid hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 text-sm font-bold group text-gray-600 hover:text-black"
@@ -569,26 +576,48 @@ export function LeftSidebar({
           </span>
           Add source
         </button>
-        <div className="relative group">
-          <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 z-10 icon-sm">
-            search
-          </span>
-          <input
-            className="w-full bg-white border border-gray-300 py-2 pl-10 pr-4 text-sm font-medium placeholder-gray-400 focus:border-black focus:ring-0 focus:shadow-hard-sm transition-all outline-none"
-            placeholder="Filter sources..."
-            type="text"
-          />
-        </div>
-        <div className="flex gap-2 text-xs font-bold w-full overflow-x-auto pb-1 hide-scrollbar">
-          <button className="px-3 py-1.5 bg-black text-white border border-black shadow-hard-sm shrink-0">
-            All
-          </button>
-          <button className="px-3 py-1.5 bg-transparent text-gray-600 border border-gray-300 hover:border-black hover:text-black transition-colors shrink-0">
-            PDF
-          </button>
-          <button className="px-3 py-1.5 bg-transparent text-gray-600 border border-gray-300 hover:border-black hover:text-black transition-colors shrink-0">
-            Web
-          </button>
+
+        {/* Large Multi-line Search Input */}
+        <div className="relative group p-1 -m-1">
+          <div className="w-full bg-bg-sources border border-black rounded-lg hover:shadow-hard transition-all flex flex-col pt-3 pb-2 px-3 overflow-hidden">
+            <div className="flex items-start gap-2 px-1 pb-3">
+              <span className="material-symbols-outlined text-gray-500 icon-md mt-0.5">
+                search
+              </span>
+              <textarea
+                className="flex-1 bg-transparent border-none p-0 text-sm font-medium placeholder-gray-400 focus:ring-0 outline-none text-black resize-none"
+                placeholder="Search the web for new sources"
+                rows={2}
+              />
+            </div>
+            {/* Optional dropdowns inside the search bar */}
+            <div className="flex gap-2 items-center px-1">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-transparent hover:border-black rounded-full text-xs font-bold text-gray-700 transition-colors">
+                <span className="material-symbols-outlined text-[14px]">
+                  language
+                </span>
+                Web
+                <span className="material-symbols-outlined text-[14px]">
+                  expand_more
+                </span>
+              </button>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-transparent hover:border-black rounded-full text-xs font-bold text-gray-700 transition-colors">
+                <span className="material-symbols-outlined text-[14px]">
+                  troubleshoot
+                </span>
+                Fast Research
+                <span className="material-symbols-outlined text-[14px]">
+                  expand_more
+                </span>
+              </button>
+              <div className="flex-1"></div>
+              <button className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black">
+                <span className="material-symbols-outlined text-[16px]">
+                  arrow_forward
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-2">
@@ -613,13 +642,16 @@ export function LeftSidebar({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 mb-2 px-1 py-2">
+            <div className="flex items-center justify-between mb-2 px-3 py-1 bg-gray-50">
+              <span className="text-xs font-semibold text-gray-600">
+                Select all sources
+              </span>
               <div
                 onClick={handleSelectAll}
-                className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors cursor-pointer ${
+                className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors cursor-pointer mr-0.5 ${
                   isAllSelected
                     ? "bg-black border-black text-white"
-                    : "border-gray-300 bg-white hover:border-black"
+                    : "border-gray-400 bg-white hover:border-black"
                 }`}
               >
                 {isAllSelected && (
@@ -628,9 +660,6 @@ export function LeftSidebar({
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                Select All ({selectedIds.size}/{sources.length})
-              </span>
             </div>
             {/* Source items mapping */}
             {sources.map((source) => (

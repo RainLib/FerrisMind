@@ -31,6 +31,8 @@ interface NotebookState {
   ) => void;
   addSelectedId: (id: string) => void;
   setInitialChat: (sessionId: string | null, messages: ChatMessage[]) => void;
+  isAddSourceModalOpen: boolean;
+  setIsAddSourceModalOpen: (isOpen: boolean) => void;
 }
 
 export const useNotebookStore = create<NotebookState>((set) => ({
@@ -58,4 +60,6 @@ export const useNotebookStore = create<NotebookState>((set) => ({
       initialSessionId: sessionId,
       initialMessages: messages,
     })),
+  isAddSourceModalOpen: false,
+  setIsAddSourceModalOpen: (isOpen) => set({ isAddSourceModalOpen: isOpen }),
 }));
