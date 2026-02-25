@@ -61,12 +61,26 @@ export default function Editor() {
           // Hydrate the store with the chat history
           if (data.notebookChatHistory) {
             const { sessionId, messages } = data.notebookChatHistory;
-            const chatMessages: ChatMessage[] = messages.map((m) => ({
-              id: m.id,
-              role: m.role as "user" | "assistant",
-              content: m.content,
-              isStreaming: false,
-            }));
+            const chatMessages: ChatMessage[] = messages.map((m) => {
+              let suggestedQuestions: string[] | undefined;
+              if (m.metadata) {
+                try {
+                  const meta = JSON.parse(m.metadata);
+                  if (Array.isArray(meta?.suggested_questions)) {
+                    suggestedQuestions = meta.suggested_questions;
+                  }
+                } catch {
+                  /* ignore */
+                }
+              }
+              return {
+                id: m.id,
+                role: m.role as "user" | "assistant",
+                content: m.content,
+                isStreaming: false,
+                suggestedQuestions,
+              };
+            });
             setInitialChat(sessionId || null, chatMessages);
           } else {
             setInitialChat(null, []);

@@ -16,6 +16,7 @@ export interface ChatMessage {
   stages?: { stage: string; message: string; progress: number }[];
   metadata?: { intent?: string; [key: string]: unknown };
   isStreaming?: boolean;
+  suggestedQuestions?: string[];
 }
 
 export function ChatPanel({ notebookId }: ChatPanelProps) {
@@ -43,6 +44,28 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [inputValue]);
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+    // Optional: show a small toast here if a toast context is available
+  };
+
+  const handleAction = (actionName: string, msgId: string) => {
+    console.log(`Action [${actionName}] clicked for message ${msgId}`);
+  };
+
+  const handleSuggestionClick = (question: string) => {
+    setInputValue(question);
+    setTimeout(() => {
+      setInputValue(question);
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.style.height = "auto";
+        el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+      }
+    }, 0);
+  };
 
   const handleSend = async () => {
     if (!inputValue.trim() || isSending) return;
@@ -150,6 +173,19 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
                 : msg,
             ),
           );
+        } else if (eventType === "suggestions") {
+          try {
+            const questions: string[] = JSON.parse(dataStr);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === aiMsgId
+                  ? { ...msg, suggestedQuestions: questions }
+                  : msg,
+              ),
+            );
+          } catch {
+            /* ignore */
+          }
         } else if (eventType === "error") {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -269,7 +305,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
 
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-16 pt-8 pb-40">
         {hasSources ? (
-          <div className="max-w-3xl mx-auto space-y-12">
+          <div className="max-w-5xl mx-auto space-y-12">
             {messages.length === 0 && (
               <>
                 {/* Summary Section */}
@@ -350,7 +386,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                 <div key={msg.id} className="w-full">
                   {msg.role === "user" ? (
                     <div className="flex justify-end w-full">
-                      <div className="bg-gray-100 text-black px-4 sm:px-6 py-4 border border-black shadow-hard-sm max-w-[90%] sm:max-w-[80%]">
+                      <div className="bg-gray-100 text-black px-4 sm:px-6 py-4 border border-black shadow-hard-sm max-w-full">
                         <p className="text-sm font-medium whitespace-pre-wrap">
                           {msg.content}
                         </p>
@@ -358,42 +394,107 @@ Through a specific movie recommendation project case, the documents demonstrate 
                     </div>
                   ) : (
                     <div className="flex justify-start w-full">
-                      <div
-                        className={`w-full border p-4 sm:p-8 shadow-hard relative mt-4 ${
-                          msg.metadata?.error
-                            ? "bg-red-50 border-red-400"
-                            : "bg-white border-black"
-                        }`}
-                      >
+                      <div className="w-full flex flex-col gap-2 relative mt-4">
                         <div
-                          className={`absolute -top-3 -left-3 border px-3 py-1 text-xs font-bold uppercase text-white shadow-sm flex items-center gap-2 ${
+                          className={`w-full border p-4 sm:p-8 shadow-hard relative ${
                             msg.metadata?.error
-                              ? "bg-red-500 border-red-600"
-                              : "bg-accent-main border-black"
+                              ? "bg-red-50 border-red-400"
+                              : "bg-white border-black"
                           }`}
                         >
-                          {msg.metadata?.error ? "Error" : "AI Response"}
-                          {msg.metadata?.intent && !msg.metadata?.error && (
-                            <span className="text-[9px] bg-black/20 px-1 rounded-sm">
-                              {msg.metadata.intent}
-                            </span>
+                          <div
+                            className={`absolute -top-3 -left-3 border px-3 py-1 text-xs font-bold uppercase text-white shadow-sm flex items-center gap-2 ${
+                              msg.metadata?.error
+                                ? "bg-red-500 border-red-600"
+                                : "bg-accent-main border-black"
+                            }`}
+                          >
+                            {msg.metadata?.error ? "Error" : "AI Response"}
+                            {msg.metadata?.intent && !msg.metadata?.error && (
+                              <span className="text-[9px] bg-black/20 px-1 rounded-sm">
+                                {msg.metadata.intent}
+                              </span>
+                            )}
+                          </div>
+                          {msg.stages &&
+                            msg.stages.length > 0 &&
+                            msg.isStreaming && (
+                              <div className="mb-4 text-xs font-mono text-gray-500 bg-gray-50 border border-dotted border-gray-300 p-2 overflow-hidden truncate">
+                                <span className="material-symbols-outlined text-[14px] align-middle mr-1 animate-spin">
+                                  progress_activity
+                                </span>
+                                {msg.stages[msg.stages.length - 1].stage}:{" "}
+                                {msg.stages[msg.stages.length - 1].message}
+                              </div>
+                            )}
+                          <MarkdownRenderer content={msg.content} />
+                          {msg.isStreaming && (
+                            <span className="inline-block w-2 h-4 bg-black/50 animate-pulse ml-1 align-middle" />
                           )}
                         </div>
-                        {msg.stages &&
-                          msg.stages.length > 0 &&
-                          msg.isStreaming && (
-                            <div className="mb-4 text-xs font-mono text-gray-500 bg-gray-50 border border-dotted border-gray-300 p-2 overflow-hidden truncate">
-                              <span className="material-symbols-outlined text-[14px] align-middle mr-1 animate-spin">
-                                progress_activity
+
+                        {/* Action Bar (Outside the Box) */}
+                        {!msg.isStreaming && !msg.metadata?.error && (
+                          <div className="flex items-center gap-1 text-gray-500 px-2 py-1 select-none">
+                            <button
+                              onClick={() => handleAction("save", msg.id)}
+                              className="px-3 py-1.5 hover:bg-black hover:text-white transition-colors flex items-center gap-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-transparent hover:border-black"
+                              title="Save to Note"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                push_pin
                               </span>
-                              {msg.stages[msg.stages.length - 1].stage}:{" "}
-                              {msg.stages[msg.stages.length - 1].message}
+                              Save to Note
+                            </button>
+                            <button
+                              onClick={() => handleCopy(msg.content)}
+                              className="p-1.5 hover:bg-black hover:text-white transition-colors rounded-full border border-transparent hover:border-black"
+                              title="Copy"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                content_copy
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => handleAction("like", msg.id)}
+                              className="p-1.5 hover:bg-black hover:text-white transition-colors rounded-full border border-transparent hover:border-black ml-1"
+                              title="Good Response"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                thumb_up
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => handleAction("dislike", msg.id)}
+                              className="p-1.5 hover:bg-black hover:text-white transition-colors rounded-full border border-transparent hover:border-black"
+                              title="Poor Response"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                thumb_down
+                              </span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Suggested follow-up questions */}
+                        {!msg.isStreaming &&
+                          msg.suggestedQuestions &&
+                          msg.suggestedQuestions.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3 px-1">
+                              {msg.suggestedQuestions.map((q, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => handleSuggestionClick(q)}
+                                  className="text-left px-3 py-2 bg-white border border-gray-200 hover:border-black hover:shadow-hard-sm hover:-translate-y-0.5 transition-all text-xs font-medium text-gray-600 hover:text-black rounded-sm max-w-full"
+                                >
+                                  <span className="material-symbols-outlined text-[14px] align-middle mr-1.5 text-accent-secondary">
+                                    arrow_forward
+                                  </span>
+                                  {q}
+                                </button>
+                              ))}
                             </div>
                           )}
-                        <MarkdownRenderer content={msg.content} />
-                        {msg.isStreaming && (
-                          <span className="inline-block w-2 h-4 bg-black/50 animate-pulse ml-1 align-middle" />
-                        )}
                       </div>
                     </div>
                   )}
@@ -423,7 +524,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-linear-to-t from-white via-white/80 to-transparent pt-12">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="bg-white border border-black shadow-hard hover:shadow-hard-hover transition-all flex flex-col relative z-20">
             <textarea
               ref={textareaRef}

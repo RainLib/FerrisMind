@@ -74,6 +74,7 @@ export const GET_NOTEBOOK_INITIAL_DATA = `
         id
         role
         content
+        metadata
         createdAt
       }
     }
@@ -214,6 +215,7 @@ export type ChatHistoryMessage = {
   id: string;
   role: string;
   content: string;
+  metadata: string | null;
   createdAt: string;
 };
 

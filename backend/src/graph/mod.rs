@@ -5,4 +5,5 @@ pub mod intent;
 pub mod router;
 pub mod source;
 pub mod source_chat;
+pub mod suggest;
 pub mod workflow;

@@ -95,6 +95,7 @@ pub struct ChatFlowData {
 
     // ── Output ──
     pub response: String,
+    pub suggested_questions: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

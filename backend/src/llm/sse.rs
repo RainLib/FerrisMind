@@ -144,6 +144,7 @@ pub async fn chat_stream_handler(
                         "source_ids": result.source_ids,
                         "search_query_count": result.search_strategy.as_ref().map(|s| s.searches.len()).unwrap_or(0),
                         "search_hit_count": result.search_results.len(),
+                        "suggested_questions": result.suggested_questions,
                     });
 
                     match db_for_save
@@ -189,6 +190,18 @@ pub async fn chat_stream_handler(
                     .await
                 {
                     tracing::error!("Failed to update session timestamp after reply: {}", e);
+                }
+
+                // Send suggested follow-up questions
+                if !result.suggested_questions.is_empty() {
+                    let _ = tx
+                        .send(Ok(Event::default()
+                            .event("suggestions")
+                            .data(
+                                serde_json::to_string(&result.suggested_questions)
+                                    .unwrap_or_default(),
+                            )))
+                        .await;
                 }
 
                 let _ = tx

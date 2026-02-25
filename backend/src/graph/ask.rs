@@ -2,6 +2,7 @@ use crate::db::Db;
 use crate::graph::context::{
     emit_stage, ChatFlowData, SearchHit, SearchStrategy, StageSender, SubAnswer,
 };
+use crate::graph::suggest::SuggestQuestionsTask;
 use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
@@ -376,11 +377,9 @@ impl Task for AskFinalAnswerTask {
         data.response = response;
         ctx.set("data", data).await;
 
-        emit_stage(&self.tx, "complete", "Done", 100).await;
-
         Ok(TaskResult::new(
             Some("Final answer generated".to_string()),
-            NextAction::End,
+            NextAction::ContinueAndExecute,
         ))
     }
 }
@@ -421,9 +420,14 @@ impl AskGraphRunner {
                     llm: self.llm.clone(),
                     tx: tx.clone(),
                 }))
+                .add_task(Arc::new(SuggestQuestionsTask {
+                    llm: self.llm.clone(),
+                    tx: tx.clone(),
+                }))
                 .add_edge("AskEntryTask", "AskSearchTask")
                 .add_edge("AskSearchTask", "AskQueryProcessTask")
                 .add_edge("AskQueryProcessTask", "AskFinalAnswerTask")
+                .add_edge("AskFinalAnswerTask", "SuggestQuestionsTask")
                 .set_start_task("AskEntryTask")
                 .build(),
         );

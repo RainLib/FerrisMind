@@ -17,6 +17,7 @@ export interface ChatMessage {
   stages?: { stage: string; message: string; progress: number }[];
   metadata?: { intent?: string; error?: string; [key: string]: unknown };
   isStreaming?: boolean;
+  suggestedQuestions?: string[];
 }
 
 interface NotebookState {
