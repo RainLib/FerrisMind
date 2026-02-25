@@ -1,5 +1,5 @@
 use crate::db::Db;
-use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, StageSender};
+use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, SearchHit, StageSender};
 use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
@@ -26,7 +26,7 @@ impl Task for ChatContextTask {
     }
 
     async fn run(&self, ctx: Context) -> Result<TaskResult, GraphError> {
-        emit_stage(&self.tx, "chat_context", "Preparing context...", 30).await;
+        emit_stage(&self.tx, "chat_context", "Preparing context...", 25).await;
 
         let mut data = ctx
             .get::<ChatFlowData>("data")
@@ -63,6 +63,8 @@ impl Task for ChatContextTask {
             .ok()
             .and_then(|mut r| r.take(0).ok())
             .unwrap_or_default();
+
+        data.has_sources = !docs.is_empty();
 
         let docs_text = docs
             .iter()
@@ -103,7 +105,7 @@ impl Task for ChatContextTask {
 
         Ok(TaskResult::new(
             Some("Context gathered".to_string()),
-            NextAction::Continue,
+            NextAction::ContinueAndExecute,
         ))
     }
 }
@@ -128,7 +130,129 @@ struct MsgRow {
     created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-// ─── Task 2: Generate response ───
+// ─── Task 2: Lightweight vector search using user's message ───
+
+pub struct ChatSearchTask {
+    pub db: Db,
+    pub llm: Arc<LlmManager>,
+    pub tx: StageSender,
+}
+
+#[async_trait]
+impl Task for ChatSearchTask {
+    fn id(&self) -> &str {
+        "ChatSearchTask"
+    }
+
+    async fn run(&self, ctx: Context) -> Result<TaskResult, GraphError> {
+        let mut data = ctx
+            .get::<ChatFlowData>("data")
+            .await
+            .unwrap_or_default();
+
+        if !data.has_sources {
+            info!("ChatSearchTask: no sources in notebook, skipping search");
+            ctx.set("data", data).await;
+            return Ok(TaskResult::new(
+                Some("No sources — skipped search".to_string()),
+                NextAction::ContinueAndExecute,
+            ));
+        }
+
+        emit_stage(
+            &self.tx,
+            "chat_search",
+            "Searching relevant content...",
+            45,
+        )
+        .await;
+
+        info!(
+            "ChatSearchTask: vector search for '{}' in notebook {}",
+            data.message, data.notebook_id
+        );
+
+        let embedding = self.get_embedding(&data.message).await?;
+        let hits = self
+            .vector_search(&data.notebook_id, &embedding, 5)
+            .await?;
+
+        info!("ChatSearchTask: {} hits found", hits.len());
+        data.search_results = hits;
+        ctx.set("data", data).await;
+
+        Ok(TaskResult::new(
+            Some("Chat search completed".to_string()),
+            NextAction::ContinueAndExecute,
+        ))
+    }
+}
+
+impl ChatSearchTask {
+    async fn get_embedding(&self, text: &str) -> Result<Vec<f64>, GraphError> {
+        use rig::embeddings::EmbeddingModel;
+        let model = self.llm.embedding_model();
+        let emb = model.embed_text(text).await.map_err(|e| {
+            GraphError::TaskExecutionFailed(format!("Embedding failed: {}", e))
+        })?;
+        Ok(emb.vec.into_iter().map(|v| v as f64).collect())
+    }
+
+    async fn vector_search(
+        &self,
+        notebook_id: &str,
+        embedding: &[f64],
+        top_k: usize,
+    ) -> Result<Vec<SearchHit>, GraphError> {
+        use surrealdb_types::ToSql;
+
+        let query = format!(
+            "SELECT id, document, content, vector::similarity::cosine(embedding, $vec) AS score \
+             FROM chunk \
+             WHERE notebook = type::record($nb_id) AND embedding != NONE \
+             ORDER BY score DESC \
+             LIMIT {}",
+            top_k
+        );
+
+        let result: Vec<ChunkSearchRow> = self
+            .db
+            .query(&query)
+            .bind(("nb_id", notebook_id.to_string()))
+            .bind(("vec", embedding.to_vec()))
+            .await
+            .map_err(|e| {
+                GraphError::TaskExecutionFailed(format!("Vector search query failed: {}", e))
+            })?
+            .take(0)
+            .map_err(|e| {
+                GraphError::TaskExecutionFailed(format!(
+                    "Vector search deserialize failed: {}",
+                    e
+                ))
+            })?;
+
+        Ok(result
+            .into_iter()
+            .map(|r| SearchHit {
+                chunk_id: r.id.as_ref().map(|t| t.to_sql()).unwrap_or_default(),
+                document_id: r.document.to_sql(),
+                content: r.content,
+                score: r.score,
+            })
+            .collect())
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, surrealdb_types::SurrealValue)]
+struct ChunkSearchRow {
+    pub id: Option<surrealdb_types::RecordId>,
+    pub document: surrealdb_types::RecordId,
+    pub content: String,
+    pub score: f64,
+}
+
+// ─── Task 3: Generate response ───
 
 pub struct ChatResponseTask {
     pub llm: Arc<LlmManager>,
@@ -142,7 +266,7 @@ impl Task for ChatResponseTask {
     }
 
     async fn run(&self, ctx: Context) -> Result<TaskResult, GraphError> {
-        emit_stage(&self.tx, "chat_response", "Generating response...", 60).await;
+        emit_stage(&self.tx, "chat_response", "Generating response...", 70).await;
 
         let mut data = ctx
             .get::<ChatFlowData>("data")
@@ -158,9 +282,25 @@ impl Task for ChatResponseTask {
             .collect::<Vec<_>>()
             .join("\n");
 
+        // Build search results context from vector search
+        let search_context = if data.search_results.is_empty() {
+            String::new()
+        } else {
+            data.search_results
+                .iter()
+                .map(|h| format!("[{}] (score: {:.3})\n{}", h.document_id, h.score, h.content))
+                .collect::<Vec<_>>()
+                .join("\n\n---\n\n")
+        };
+
         let mut vars = HashMap::new();
         vars.insert("notebook".to_string(), data.notebook_context.clone());
         vars.insert("context".to_string(), history_str);
+        vars.insert(
+            "has_sources".to_string(),
+            data.has_sources.to_string(),
+        );
+        vars.insert("search_results".to_string(), search_context);
 
         let system_prompt = self
             .llm
@@ -189,6 +329,7 @@ impl Task for ChatResponseTask {
 }
 
 // ─── Graph builder (using graph-flow FlowRunner) ───
+// ChatContextTask → ChatSearchTask → ChatResponseTask
 
 pub struct ChatGraphRunner {
     pub llm: Arc<LlmManager>,
@@ -211,11 +352,17 @@ impl ChatGraphRunner {
                     db: self.db.clone(),
                     tx: tx.clone(),
                 }))
+                .add_task(Arc::new(ChatSearchTask {
+                    db: self.db.clone(),
+                    llm: self.llm.clone(),
+                    tx: tx.clone(),
+                }))
                 .add_task(Arc::new(ChatResponseTask {
                     llm: self.llm.clone(),
                     tx: tx.clone(),
                 }))
-                .add_edge("ChatContextTask", "ChatResponseTask")
+                .add_edge("ChatContextTask", "ChatSearchTask")
+                .add_edge("ChatSearchTask", "ChatResponseTask")
                 .set_start_task("ChatContextTask")
                 .build(),
         );

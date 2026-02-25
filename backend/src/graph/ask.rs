@@ -88,7 +88,7 @@ impl Task for AskEntryTask {
         ctx.set("data", data).await;
         Ok(TaskResult::new(
             Some("Search strategy created".to_string()),
-            NextAction::Continue,
+            NextAction::ContinueAndExecute,
         ))
     }
 }
@@ -146,7 +146,7 @@ impl Task for AskSearchTask {
 
         Ok(TaskResult::new(
             Some("Search completed".to_string()),
-            NextAction::Continue,
+            NextAction::ContinueAndExecute,
         ))
     }
 }
@@ -296,7 +296,7 @@ impl Task for AskQueryProcessTask {
 
         Ok(TaskResult::new(
             Some("Query processing completed".to_string()),
-            NextAction::Continue,
+            NextAction::ContinueAndExecute,
         ))
     }
 }

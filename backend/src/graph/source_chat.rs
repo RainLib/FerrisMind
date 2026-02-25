@@ -12,7 +12,7 @@ use std::sync::Arc;
 use surrealdb_types::SurrealValue;
 use tracing::info;
 
-// ─── Task 1: Load source document context ───
+// ─── Task 1: Load source documents context (supports multiple sources) ───
 
 pub struct SourceContextTask {
     pub db: Db,
@@ -26,59 +26,68 @@ impl Task for SourceContextTask {
     }
 
     async fn run(&self, ctx: Context) -> Result<TaskResult, GraphError> {
-        emit_stage(&self.tx, "source_context", "Loading source document...", 30).await;
+        emit_stage(&self.tx, "source_context", "Loading source documents...", 30).await;
 
         let mut data = ctx
             .get::<ChatFlowData>("data")
             .await
             .unwrap_or_default();
 
-        let source_id = data
-            .source_id
-            .as_deref()
-            .ok_or_else(|| GraphError::TaskExecutionFailed("No source_id provided".to_string()))?
-            .to_string();
-
-        info!("SourceContextTask: loading source {}", source_id);
-
-        let doc: Option<SourceDocRow> = self
-            .db
-            .query("SELECT id, filename, summary FROM type::record($id)")
-            .bind(("id", source_id.clone()))
-            .await
-            .ok()
-            .and_then(|mut r| r.take(0).ok().flatten());
-
-        let chunks: Vec<SourceChunkRow> = self
-            .db
-            .query("SELECT content, chunk_index FROM chunk WHERE document = type::record($doc_id) ORDER BY chunk_index ASC LIMIT 30")
-            .bind(("doc_id", source_id.clone()))
-            .await
-            .ok()
-            .and_then(|mut r| r.take(0).ok())
-            .unwrap_or_default();
-
-        let mut context_parts = Vec::new();
-
-        if let Some(ref d) = doc {
-            context_parts.push(format!("Source: {} ({})", d.filename, source_id));
-            if let Some(ref s) = d.summary {
-                context_parts.push(format!("Summary: {}", s));
-            }
+        if data.source_ids.is_empty() {
+            return Err(GraphError::TaskExecutionFailed(
+                "No source_ids provided".to_string(),
+            ));
         }
 
-        let max_chars: usize = 40_000;
-        let mut content = String::new();
-        for chunk in &chunks {
-            if content.len() + chunk.content.len() > max_chars {
-                break;
-            }
-            content.push_str(&chunk.content);
-            content.push('\n');
-        }
-        context_parts.push(format!("Content:\n{}", content));
+        info!(
+            "SourceContextTask: loading {} sources",
+            data.source_ids.len()
+        );
 
-        data.source_context = context_parts.join("\n\n");
+        let mut all_context_parts = Vec::new();
+
+        for source_id in &data.source_ids {
+            let doc: Option<SourceDocRow> = self
+                .db
+                .query("SELECT id, filename, summary FROM type::record($id)")
+                .bind(("id", source_id.clone()))
+                .await
+                .ok()
+                .and_then(|mut r| r.take(0).ok().flatten());
+
+            let chunks: Vec<SourceChunkRow> = self
+                .db
+                .query("SELECT content, chunk_index FROM chunk WHERE document = type::record($doc_id) ORDER BY chunk_index ASC LIMIT 30")
+                .bind(("doc_id", source_id.clone()))
+                .await
+                .ok()
+                .and_then(|mut r| r.take(0).ok())
+                .unwrap_or_default();
+
+            let mut parts = Vec::new();
+
+            if let Some(ref d) = doc {
+                parts.push(format!("Source: {} ({})", d.filename, source_id));
+                if let Some(ref s) = d.summary {
+                    parts.push(format!("Summary: {}", s));
+                }
+            }
+
+            let max_chars_per_source: usize = 40_000 / data.source_ids.len().max(1);
+            let mut content = String::new();
+            for chunk in &chunks {
+                if content.len() + chunk.content.len() > max_chars_per_source {
+                    break;
+                }
+                content.push_str(&chunk.content);
+                content.push('\n');
+            }
+            parts.push(format!("Content:\n{}", content));
+
+            all_context_parts.push(parts.join("\n\n"));
+        }
+
+        data.source_context = all_context_parts.join("\n\n========\n\n");
 
         if !data.session_id.is_empty() {
             let messages: Vec<MsgRow> = self
@@ -104,7 +113,7 @@ impl Task for SourceContextTask {
 
         Ok(TaskResult::new(
             Some("Source context loaded".to_string()),
-            NextAction::Continue,
+            NextAction::ContinueAndExecute,
         ))
     }
 }
@@ -152,15 +161,8 @@ impl Task for SourceResponseTask {
 
         info!("SourceResponseTask: generating source-specific response");
 
-        let source_id = data.source_id.clone().unwrap_or_default();
-
         let mut vars = HashMap::new();
-
-        let source_json = format!(
-            r#"{{"id": "{}", "title": "Source document", "topics": []}}"#,
-            source_id
-        );
-        vars.insert("source".to_string(), source_json);
+        vars.insert("source_ids".to_string(), data.source_ids.join(", "));
         vars.insert("context".to_string(), data.source_context.clone());
 
         let system_prompt = self

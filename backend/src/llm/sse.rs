@@ -25,7 +25,9 @@ pub struct ChatStreamInput {
     /// Optional: resume a specific session. If absent, the most recent
     /// session for this user+notebook is used (or a new one is created).
     pub session_id: Option<String>,
-    pub source_id: Option<String>,
+    /// Selected source document IDs. Empty = use all sources in the notebook.
+    #[serde(default)]
+    pub source_ids: Vec<String>,
 }
 
 pub async fn chat_stream_handler(
@@ -66,7 +68,7 @@ pub async fn chat_stream_handler(
             "metadata",
             serde_json::json!({
                 "notebook_id": notebook_id,
-                "source_id": input.source_id,
+                "source_ids": input.source_ids,
             }),
         ))
         .await;
@@ -82,7 +84,7 @@ pub async fn chat_stream_handler(
         notebook_id: notebook_id.clone(),
         session_id: session_id.clone(),
         message: input.content.clone(),
-        source_id: input.source_id.clone(),
+        source_ids: input.source_ids.clone(),
         ..Default::default()
     };
 
@@ -104,7 +106,7 @@ pub async fn chat_stream_handler(
                 let metadata = serde_json::json!({
                     "intent": result.intent,
                     "notebook_id": result.notebook_id,
-                    "source_id": result.source_id,
+                    "source_ids": result.source_ids,
                     "search_query_count": result.search_strategy.as_ref().map(|s| s.searches.len()).unwrap_or(0),
                     "search_hit_count": result.search_results.len(),
                 });

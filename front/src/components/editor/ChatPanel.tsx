@@ -74,7 +74,7 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
           notebook_id: notebookId,
           content: userMsg.content,
           session_id: sessionId,
-          source_id: null,
+          source_ids: Array.from(selectedIds),
         }),
       });
 
@@ -149,6 +149,22 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
                 } catch {
                   // ignore
                 }
+              } else if (currentEvent === "error") {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === aiMsgId
+                      ? {
+                          ...msg,
+                          content:
+                            "Sorry, an error occurred while processing your request. Please try again.",
+                          isStreaming: false,
+                          metadata: { ...msg.metadata, error: dataStr },
+                        }
+                      : msg,
+                  ),
+                );
+                done = true;
+                break;
               } else if (currentEvent === "done") {
                 setMessages((prev) =>
                   prev.map((msg) =>
@@ -333,10 +349,22 @@ Through a specific movie recommendation project case, the documents demonstrate 
                     </div>
                   ) : (
                     <div className="flex justify-start w-full">
-                      <div className="w-full bg-white border border-black p-4 sm:p-8 shadow-hard relative mt-4">
-                        <div className="absolute -top-3 -left-3 bg-accent-main border border-black px-3 py-1 text-xs font-bold uppercase text-white shadow-sm flex items-center gap-2">
-                          AI Response
-                          {msg.metadata?.intent && (
+                      <div
+                        className={`w-full border p-4 sm:p-8 shadow-hard relative mt-4 ${
+                          msg.metadata?.error
+                            ? "bg-red-50 border-red-400"
+                            : "bg-white border-black"
+                        }`}
+                      >
+                        <div
+                          className={`absolute -top-3 -left-3 border px-3 py-1 text-xs font-bold uppercase text-white shadow-sm flex items-center gap-2 ${
+                            msg.metadata?.error
+                              ? "bg-red-500 border-red-600"
+                              : "bg-accent-main border-black"
+                          }`}
+                        >
+                          {msg.metadata?.error ? "Error" : "AI Response"}
+                          {msg.metadata?.intent && !msg.metadata?.error && (
                             <span className="text-[9px] bg-black/20 px-1 rounded-sm">
                               {msg.metadata.intent}
                             </span>

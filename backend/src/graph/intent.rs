@@ -36,19 +36,21 @@ impl Task for IntentTask {
 
         info!("IntentTask: classifying message: {}", &data.message);
 
-        let has_sources = !data.notebook_context.is_empty();
-        let has_active_source = data.source_id.is_some();
+        let has_active_source = !data.source_ids.is_empty();
 
         let mut vars = HashMap::new();
         vars.insert("message".to_string(), data.message.clone());
-        vars.insert("has_sources".to_string(), has_sources.to_string());
+        vars.insert("has_sources".to_string(), data.has_sources.to_string());
         vars.insert("source_count".to_string(), "unknown".to_string());
         vars.insert(
             "has_active_source".to_string(),
             has_active_source.to_string(),
         );
-        if let Some(ref sid) = data.source_id {
-            vars.insert("active_source_id".to_string(), sid.clone());
+        if has_active_source {
+            vars.insert(
+                "active_source_id".to_string(),
+                data.source_ids.join(", "),
+            );
         }
 
         let history_str = data
@@ -98,9 +100,8 @@ impl Task for IntentTask {
             }
         }
 
-        // If intent is source_chat but no active source, downgrade to ask
-        if data.intent == "source_chat" && data.source_id.is_none() {
-            info!("IntentTask: source_chat but no active source, downgrading to ask");
+        if data.intent == "source_chat" && data.source_ids.is_empty() {
+            info!("IntentTask: source_chat but no active sources, downgrading to ask");
             data.intent = "ask".to_string();
         }
 

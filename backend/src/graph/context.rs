@@ -74,8 +74,8 @@ pub struct ChatFlowData {
     pub notebook_id: String,
     pub session_id: String,
     pub message: String,
-    /// Set when the user is chatting about a specific source document.
-    pub source_id: Option<String>,
+    /// Set when the user is chatting about specific source documents.
+    pub source_ids: Vec<String>,
 
     // ── Intent ──
     /// One of: "ask", "chat", "source_chat"
@@ -85,6 +85,8 @@ pub struct ChatFlowData {
     pub notebook_context: String,
     pub source_context: String,
     pub chat_history: Vec<ChatMessage>,
+    /// Whether the notebook has any completed source documents.
+    pub has_sources: bool,
 
     // ── Ask-specific ──
     pub search_strategy: Option<SearchStrategy>,
