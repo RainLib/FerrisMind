@@ -55,25 +55,17 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
   };
 
   const handleSuggestionClick = (question: string) => {
-    setInputValue(question);
-    setTimeout(() => {
-      setInputValue(question);
-      const el = textareaRef.current;
-      if (el) {
-        el.focus();
-        el.style.height = "auto";
-        el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
-      }
-    }, 0);
+    handleSend(question);
   };
 
-  const handleSend = async () => {
-    if (!inputValue.trim() || isSending) return;
+  const handleSend = async (overrideText?: string) => {
+    const textToSend = overrideText !== undefined ? overrideText : inputValue;
+    if (!textToSend.trim() || isSending) return;
 
     const userMsg: ChatMessage = {
       id: "usr_" + Date.now(),
       role: "user",
-      content: inputValue.trim(),
+      content: textToSend.trim(),
     };
 
     const aiMsgId = "ai_" + Date.now();
@@ -347,7 +339,12 @@ Through a specific movie recommendation project case, the documents demonstrate 
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                  <button
+                    onClick={() =>
+                      handleSend("How to use AWS to build Agentic AI?")
+                    }
+                    className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30"
+                  >
                     <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
                       Beginner&apos;s Guide
                     </span>
@@ -355,7 +352,12 @@ Through a specific movie recommendation project case, the documents demonstrate 
                       How to use AWS to build Agentic AI?
                     </span>
                   </button>
-                  <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                  <button
+                    onClick={() =>
+                      handleSend("LangGraph vs LlamaIndex pros & cons.")
+                    }
+                    className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30"
+                  >
                     <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
                       Comparison
                     </span>
@@ -363,7 +365,14 @@ Through a specific movie recommendation project case, the documents demonstrate 
                       LangGraph vs LlamaIndex pros &amp; cons.
                     </span>
                   </button>
-                  <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all md:col-span-2 group hover:bg-accent-light/30">
+                  <button
+                    onClick={() =>
+                      handleSend(
+                        "Ensuring AI agent safety & performance in production?",
+                      )
+                    }
+                    className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all md:col-span-2 group hover:bg-accent-light/30"
+                  >
                     <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
                       Best Practices
                     </span>
@@ -382,7 +391,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
             )}
 
             <div className="flex flex-col gap-6">
-              {messages.map((msg) => (
+              {messages.map((msg, index) => (
                 <div key={msg.id} className="w-full">
                   {msg.role === "user" ? (
                     <div className="flex justify-end w-full">
@@ -479,7 +488,8 @@ Through a specific movie recommendation project case, the documents demonstrate 
                         {/* Suggested follow-up questions */}
                         {!msg.isStreaming &&
                           msg.suggestedQuestions &&
-                          msg.suggestedQuestions.length > 0 && (
+                          msg.suggestedQuestions.length > 0 &&
+                          index === messages.length - 1 && (
                             <div className="flex flex-wrap gap-2 mt-3 px-1">
                               {msg.suggestedQuestions.map((q, i) => (
                                 <button
@@ -558,11 +568,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
               <button
                 className="p-2 bg-accent-main border border-black text-white hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                 disabled={!inputValue.trim() || isSending}
-                onClick={() => {
-                  if (inputValue.trim() && !isSending) {
-                    handleSend();
-                  }
-                }}
+                onClick={() => handleSend()}
               >
                 <span className="material-symbols-outlined icon-sm">
                   arrow_upward
