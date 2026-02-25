@@ -41,7 +41,7 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
         "DEFINE FIELD source_type ON document TYPE string ASSERT $value IN ['file', 'url', 'text'];",
         "DEFINE FIELD sha256 ON document TYPE option<string>;",
         "DEFINE FIELD url ON document TYPE option<string>;",
-        "DEFINE FIELD parsing_rules ON document FLEXIBLE TYPE option<object>;",
+        "DEFINE FIELD parsing_rules ON document TYPE option<object> FLEXIBLE;",
         "DEFINE FIELD file_type ON document TYPE string;",
         "DEFINE FIELD file_size ON document TYPE int;",
         "DEFINE FIELD upload_status ON document TYPE string ASSERT $value IN ['pending', 'processing', 'completed', 'failed'];",
@@ -89,7 +89,7 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
         "DEFINE FIELD session ON message TYPE record<session>;",
         "DEFINE FIELD role ON message TYPE string ASSERT $value IN ['user', 'assistant', 'system'];",
         "DEFINE FIELD content ON message TYPE string;",
-        "DEFINE FIELD metadata ON message FLEXIBLE TYPE option<object>;",
+        "DEFINE FIELD metadata ON message TYPE option<object> FLEXIBLE;",
         "DEFINE FIELD created_at ON message TYPE datetime DEFAULT time::now();",
         "DEFINE INDEX idx_msg_session ON message FIELDS session;",
     ];
