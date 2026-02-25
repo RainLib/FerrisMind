@@ -9,18 +9,21 @@ import { fetchGraphQL, GET_NOTEBOOK, Notebook } from "@/lib/graphql";
 
 export default function Editor() {
   const params = useParams();
-  const id = params?.id as string;
   const [title, setTitle] = useState("Loading...");
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Decode the ID in case it comes URL-encoded from useParams (e.g. notebook%3A123 -> notebook:123)
+  const idRaw = params?.id as string;
+  const decodedId = decodeURIComponent(idRaw || "");
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const { data, errors } = await fetchGraphQL<{ notebook: Notebook }>(
           GET_NOTEBOOK,
-          { id },
+          { id: decodedId },
         );
         if (data?.notebook) {
           setTitle(data.notebook.name);
@@ -36,7 +39,7 @@ export default function Editor() {
     };
 
     loadData();
-  }, [id]);
+  }, [decodedId]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -132,7 +135,7 @@ export default function Editor() {
           </div>
         </div>
       </header>
-      <EditorLayout notebookId={id} />
+      <EditorLayout notebookId={decodedId} />
     </>
   );
 }

@@ -17,7 +17,7 @@ function ResizeHandle({
   return (
     <div
       onMouseDown={onMouseDown}
-      className={`w-px bg-border-bold flex flex-col items-center justify-center transition-colors cursor-col-resize z-50 relative shrink-0 hover:bg-black group ${
+      className={`h-full w-px bg-border-bold flex flex-col items-center justify-center transition-colors cursor-col-resize z-50 relative shrink-0 hover:bg-black group ${
         isDragging ? "bg-black" : ""
       }`}
     >
@@ -63,7 +63,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
 
   // Left drag logic
   const handleLeftMouseMove = useCallback((e: MouseEvent) => {
-    setLeftWidth(Math.max(240, Math.min(600, e.clientX)));
+    setLeftWidth(Math.max(240, Math.min(window.innerWidth * 0.6, e.clientX)));
   }, []);
 
   const handleLeftMouseUp = useCallback(() => {
@@ -90,7 +90,12 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
 
   // Right drag logic
   const handleRightMouseMove = useCallback((e: MouseEvent) => {
-    setRightWidth(Math.max(240, Math.min(600, window.innerWidth - e.clientX)));
+    setRightWidth(
+      Math.max(
+        240,
+        Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX),
+      ),
+    );
   }, []);
 
   const handleRightMouseUp = useCallback(() => {
@@ -190,10 +195,10 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
       >
         <LeftSidebar onToggle={toggleLeftSidebar} notebookId={notebookId} />
         {isDraggingLeft && (
-          <div className="absolute inset-0 z-50 pointer-events-none" />
+          <div className="absolute inset-0 z-50 pointer-events-auto cursor-col-resize" />
         )}
       </div>
-      <div style={{ display: isLeftExpanded ? "block" : "none" }}>
+      <div className={`h-full ${isLeftExpanded ? "block" : "hidden"}`}>
         <ResizeHandle
           isDragging={isDraggingLeft}
           onMouseDown={(e) => {
@@ -209,12 +214,12 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
           onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}
         />
         {(isDraggingLeft || isDraggingRight) && (
-          <div className="absolute inset-0 z-50 pointer-events-none" />
+          <div className="absolute inset-0 z-50 pointer-events-auto cursor-col-resize" />
         )}
       </div>
 
       {/* Right Handle + Expanded Right Sidebar */}
-      <div style={{ display: isRightExpanded ? "block" : "none" }}>
+      <div className={`h-full ${isRightExpanded ? "block" : "hidden"}`}>
         <ResizeHandle
           isDragging={isDraggingRight}
           onMouseDown={(e) => {
@@ -232,7 +237,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
       >
         <RightSidebar isExpanded={true} onToggle={toggleRightSidebar} isPanel />
         {isDraggingRight && (
-          <div className="absolute inset-0 z-50 pointer-events-none" />
+          <div className="absolute inset-0 z-50 pointer-events-auto cursor-col-resize" />
         )}
       </div>
 

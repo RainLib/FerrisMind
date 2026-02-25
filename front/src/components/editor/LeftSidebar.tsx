@@ -14,13 +14,7 @@ import {
   DocumentContent,
 } from "@/lib/graphql";
 
-interface Source {
-  id: string;
-  icon: string;
-  title: string;
-  sub: string;
-  rawStatus?: string;
-}
+import { useNotebookStore, Source } from "@/store/notebookStore";
 
 interface SourceItemProps {
   source: Source;
@@ -29,6 +23,7 @@ interface SourceItemProps {
   onItemClick: (id: string) => void;
   onDelete: (id: string) => void;
   onRename: (id: string, newTitle: string) => void;
+  onRetry?: (id: string) => void;
 }
 
 function SourceItem({
@@ -38,6 +33,7 @@ function SourceItem({
   onItemClick,
   onDelete,
   onRename,
+  onRetry,
 }: SourceItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(source.title);
@@ -201,6 +197,19 @@ function SourceItem({
             </div>
           </button>
         )}
+        {isFailed && onRetry && (
+          <button
+            onClick={() => onRetry(source.id)}
+            className="p-1 text-gray-400 hover:text-blue-600 transition-colors relative group/btn"
+          >
+            <span className="material-symbols-outlined text-[16px]">
+              refresh
+            </span>
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover/btn:block">
+              Retry
+            </div>
+          </button>
+        )}
         {!isUploading && (
           <button
             onClick={() => onDelete(source.id)}
@@ -231,19 +240,16 @@ export function LeftSidebar({
   notebookId,
 }: LeftSidebarProps) {
   const [isAddSourceModalOpen, setIsAddSourceModalOpen] = useState(false);
-  // Add refreshing state
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeDetailId, setActiveDetailId] = useState<string | null>(null);
   const [documentContent, setDocumentContent] =
     useState<DocumentContent | null>(null);
   const [isContentLoading, setIsContentLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  // Default to empty for a new notebook to trigger the modal automatically
-  const [sources, setSources] = useState<Source[]>([]);
+  const { sources, setSources, selectedIds, setSelectedIds, addSelectedId } =
+    useNotebookStore();
 
   // Load documents
   const loadDocuments = useCallback(async () => {
-    setIsRefreshing(true);
     try {
       const { data, errors } = await fetchGraphQL<{ documents: Document[] }>(
         GET_NOTEBOOK_DOCUMENTS,
@@ -274,10 +280,8 @@ export function LeftSidebar({
       }
     } catch (e) {
       console.error(e);
-    } finally {
-      setIsRefreshing(false);
     }
-  }, [notebookId]);
+  }, [notebookId, setSources]);
 
   const handleUploadFiles = async (files: File[]) => {
     const tempSources = files.map((file) => ({
@@ -286,6 +290,7 @@ export function LeftSidebar({
       title: file.name,
       sub: "uploading",
       rawStatus: "uploading",
+      file,
     }));
 
     setSources((prev) => [...tempSources, ...prev]);
@@ -308,11 +313,18 @@ export function LeftSidebar({
         prev.map((s) => {
           const foundTempIndex = tempSources.findIndex((ts) => ts.id === s.id);
           if (foundTempIndex >= 0 && result.documents[foundTempIndex]) {
+            const doc = result.documents[foundTempIndex];
+            if (doc.uploadStatus === "completed") {
+              addSelectedId(doc.id);
+            }
             return {
               ...s,
-              id: result.documents[foundTempIndex].id,
-              rawStatus: "pending",
-              sub: "pending",
+              id: doc.id,
+              rawStatus: doc.uploadStatus,
+              sub:
+                doc.uploadStatus === "completed"
+                  ? `${Math.round(doc.chunkCount * 1.5)} words`
+                  : doc.uploadStatus,
             };
           }
           return s;
@@ -337,6 +349,7 @@ export function LeftSidebar({
       title: url,
       sub: "uploading",
       rawStatus: "uploading",
+      url,
     }));
 
     setSources((prev) => [...tempSources, ...prev]);
@@ -361,11 +374,18 @@ export function LeftSidebar({
         prev.map((s) => {
           const foundTempIndex = tempSources.findIndex((ts) => ts.id === s.id);
           if (foundTempIndex >= 0 && result.documents[foundTempIndex]) {
+            const doc = result.documents[foundTempIndex];
+            if (doc.uploadStatus === "completed") {
+              addSelectedId(doc.id);
+            }
             return {
               ...s,
-              id: result.documents[foundTempIndex].id,
-              rawStatus: "pending",
-              sub: "pending",
+              id: doc.id,
+              rawStatus: doc.uploadStatus,
+              sub:
+                doc.uploadStatus === "completed"
+                  ? `${Math.round(doc.chunkCount * 1.5)} words`
+                  : doc.uploadStatus,
             };
           }
           return s;
@@ -407,12 +427,20 @@ export function LeftSidebar({
       }>(GET_DOCUMENT_UPLOAD_STATUSES, { ids: pendingIds });
 
       if (data?.documentUploadStatuses) {
+        const newlyCompletedIds: string[] = [];
+
         setSources((prev) =>
           prev.map((source) => {
             const update = data.documentUploadStatuses.find(
               (s) => s.id === source.id,
             );
             if (update) {
+              if (
+                source.rawStatus !== "completed" &&
+                update.uploadStatus === "completed"
+              ) {
+                newlyCompletedIds.push(source.id);
+              }
               return {
                 ...source,
                 sub:
@@ -425,11 +453,19 @@ export function LeftSidebar({
             return source;
           }),
         );
+
+        if (newlyCompletedIds.length > 0) {
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            newlyCompletedIds.forEach((id) => next.add(id));
+            return next;
+          });
+        }
       }
     }, 2000); // poll every 2 seconds
 
     return () => clearInterval(intervalId);
-  }, [sources]);
+  }, [sources, setSources, setSelectedIds]);
 
   // Load document content when detail view is opened
   useEffect(() => {
@@ -483,7 +519,7 @@ export function LeftSidebar({
     }
   };
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // selectedIds is now from Zustand
 
   const handleSelectToggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -510,6 +546,20 @@ export function LeftSidebar({
     setSources((prev) =>
       prev.map((s) => (s.id === id ? { ...s, title: newTitle } : s)),
     );
+  };
+
+  const handleRetry = (id: string) => {
+    const sourceToRetry = sources.find((s) => s.id === id);
+    if (!sourceToRetry) return;
+
+    // Remove the failed item before retrying
+    setSources((prev) => prev.filter((s) => s.id !== id));
+
+    if (sourceToRetry.file) {
+      handleUploadFiles([sourceToRetry.file]);
+    } else if (sourceToRetry.url) {
+      handleUploadUrls([sourceToRetry.url]);
+    }
   };
 
   const isAllSelected =
@@ -548,9 +598,9 @@ export function LeftSidebar({
           className="w-full py-3 px-4 bg-white border border-dashed border-black shadow-sm hover:shadow-md hover:border-solid hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 text-sm font-bold group text-gray-600 hover:text-black"
         >
           <span className="material-symbols-outlined icon-sm text-accent-main group-hover:text-black transition-colors">
-            {isRefreshing ? "progress_activity" : "add"}
+            add
           </span>
-          {isRefreshing ? "Refreshing..." : "Add source"}
+          Add source
         </button>
         <div className="relative group">
           <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 z-10 icon-sm">
@@ -575,37 +625,61 @@ export function LeftSidebar({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-2">
-        <div className="flex items-center gap-2 mb-2 px-1 py-2">
-          <div
-            onClick={handleSelectAll}
-            className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors cursor-pointer ${
-              isAllSelected
-                ? "bg-black border-black text-white"
-                : "border-gray-300 bg-white hover:border-black"
-            }`}
-          >
-            {isAllSelected && (
-              <span className="material-symbols-outlined text-[12px] font-bold">
-                check
+        {sources.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center relative border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-sm">
+            <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-white px-1 border border-gray-200">
+              [EMPTY]
+            </div>
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-200 mb-4 shadow-sm">
+              <span className="material-symbols-outlined text-gray-400 icon-lg">
+                upload_file
               </span>
-            )}
+            </div>
+            <h3 className="text-sm font-bold text-gray-600 mb-2">
+              No sources found
+            </h3>
+            <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-[200px] mx-auto">
+              Please click the{" "}
+              <strong className="text-gray-700">Add source</strong> button above
+              to upload documents or web links.
+            </p>
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            Select All ({selectedIds.size}/{sources.length})
-          </span>
-        </div>
-        {/* Source items mapping */}
-        {sources.map((source) => (
-          <SourceItem
-            key={source.id}
-            source={source}
-            selected={selectedIds.has(source.id)}
-            onSelectToggle={handleSelectToggle}
-            onItemClick={(id) => setActiveDetailId(id)}
-            onDelete={handleDelete}
-            onRename={handleRename}
-          />
-        ))}
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-2 px-1 py-2">
+              <div
+                onClick={handleSelectAll}
+                className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors cursor-pointer ${
+                  isAllSelected
+                    ? "bg-black border-black text-white"
+                    : "border-gray-300 bg-white hover:border-black"
+                }`}
+              >
+                {isAllSelected && (
+                  <span className="material-symbols-outlined text-[12px] font-bold">
+                    check
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Select All ({selectedIds.size}/{sources.length})
+              </span>
+            </div>
+            {/* Source items mapping */}
+            {sources.map((source) => (
+              <SourceItem
+                key={source.id}
+                source={source}
+                selected={selectedIds.has(source.id)}
+                onSelectToggle={handleSelectToggle}
+                onItemClick={(id) => setActiveDetailId(id)}
+                onDelete={handleDelete}
+                onRename={handleRename}
+                onRetry={handleRetry}
+              />
+            ))}
+          </>
+        )}
       </div>
 
       {activeDetailId && activeSource && (

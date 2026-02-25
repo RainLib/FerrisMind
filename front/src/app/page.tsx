@@ -41,9 +41,9 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [notebooks, setNotebooks] = useState<NotebookUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Modal states
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedNotebook, setSelectedNotebook] = useState<NotebookUI | null>(
@@ -82,10 +82,22 @@ export default function Home() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  const openCreateModal = () => {
-    setFormName("");
-    setFormDescription("");
-    setCreateModalOpen(true);
+  const handleCreateNotebook = async () => {
+    setIsCreating(true);
+    try {
+      const { data, errors } = await fetchGraphQL<{
+        createNotebook: { id: string };
+      }>(CREATE_NOTEBOOK, { name: "Untitled Notebook", description: "" });
+      if (data) {
+        router.push(`/notebook/${data.createNotebook.id}`);
+      } else if (errors) {
+        alert("Failed to create notebook: " + errors[0].message);
+        setIsCreating(false);
+      }
+    } catch (e) {
+      console.error("Failed to create notebook:", e);
+      setIsCreating(false);
+    }
   };
 
   const openEditModal = (notebook: NotebookUI, e: React.MouseEvent) => {
@@ -104,19 +116,6 @@ export default function Home() {
     setSelectedNotebook(notebook);
     setOpenDropdownId(null);
     setDeleteModalOpen(true);
-  };
-
-  const submitCreateNotebook = async () => {
-    if (!formName.trim()) return alert("Name is required");
-    const { data, errors } = await fetchGraphQL<{
-      createNotebook: { id: string };
-    }>(CREATE_NOTEBOOK, { name: formName, description: formDescription });
-    if (data) {
-      setCreateModalOpen(false);
-      router.push(`/notebook/${data.createNotebook.id}`);
-    } else if (errors) {
-      alert("Failed to create notebook: " + errors[0].message);
-    }
   };
 
   const submitEditNotebook = async () => {
@@ -213,11 +212,16 @@ export default function Home() {
             </p>
           </div>
           <button
-            onClick={openCreateModal}
-            className="flex items-center gap-2 px-5 py-2.5 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-lg font-semibold text-sm cursor-pointer"
+            onClick={handleCreateNotebook}
+            disabled={isCreating}
+            className="flex items-center gap-2 px-5 py-2.5 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-lg font-semibold text-sm cursor-pointer disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
           >
-            <span className="material-symbols-outlined icon-sm">add</span>
-            Create new
+            <span
+              className={`material-symbols-outlined icon-sm ${isCreating ? "animate-spin" : ""}`}
+            >
+              {isCreating ? "progress_activity" : "add"}
+            </span>
+            {isCreating ? "Creating..." : "Create new"}
           </button>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-1">
@@ -481,60 +485,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      {/* CREATE MODAL */}
-      {createModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white border border-black shadow-modal rounded-xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="font-bold text-lg text-black tracking-tight">
-                Create Notebook
-              </h3>
-            </div>
-            <div className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 block">
-                  Notebook Name *
-                </label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors"
-                  placeholder="e.g. Q4 Financial Research"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 block">
-                  Description (Optional)
-                </label>
-                <textarea
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors h-24 resize-none"
-                  placeholder="What is this notebook about?"
-                />
-              </div>
-            </div>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                onClick={() => setCreateModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-black"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitCreateNotebook}
-                disabled={!formName.trim()}
-                className="px-4 py-2 border border-black shadow-hard-sm bg-accent-main text-white rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* RENAME MODAL */}
       {editModalOpen && (

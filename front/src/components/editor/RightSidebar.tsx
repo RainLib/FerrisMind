@@ -4,6 +4,7 @@ import * as React from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PanelDetailView } from "./PanelDetailView";
+import { useNotebookStore } from "@/store/notebookStore";
 
 interface RightSidebarProps {
   isExpanded?: boolean;
@@ -16,6 +17,8 @@ export function RightSidebar({
   onToggle,
   isPanel,
 }: RightSidebarProps) {
+  const { sources } = useNotebookStore();
+  const hasSources = sources.length > 0;
   const [activeTool, setActiveTool] = useState<string | null>(null);
 
   const handleToolClick = (toolId: string) => {
@@ -71,9 +74,13 @@ export function RightSidebar({
           {/* Audio Tool */}
           <button
             onClick={() => handleToolClick("audio")}
+            disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-orange-50/60 border border-orange-200 rounded-sm hover:border-orange-500 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-orange group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-orange-50/60 border border-orange-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-orange group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
+              hasSources
+                ? "hover:border-orange-500 hover:shadow-md"
+                : "opacity-40 grayscale cursor-not-allowed",
             )}
             style={{
               backgroundImage:
@@ -101,9 +108,13 @@ export function RightSidebar({
           {/* Video Tool */}
           <button
             onClick={() => handleToolClick("video")}
+            disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-cyan-50/60 border border-cyan-200 rounded-sm hover:border-cyan-500 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-blue group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-cyan-50/60 border border-cyan-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-blue group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
+              hasSources
+                ? "hover:border-cyan-500 hover:shadow-md"
+                : "opacity-40 grayscale cursor-not-allowed",
             )}
             style={{
               backgroundImage:
@@ -131,9 +142,13 @@ export function RightSidebar({
           {/* Brief Tool */}
           <button
             onClick={() => handleToolClick("brief")}
+            disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-emerald-50/60 border border-emerald-200 rounded-sm hover:border-emerald-600 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-green group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-emerald-50/60 border border-emerald-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-green group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
+              hasSources
+                ? "hover:border-emerald-600 hover:shadow-md"
+                : "opacity-40 grayscale cursor-not-allowed",
             )}
             style={{
               backgroundImage:
@@ -161,9 +176,13 @@ export function RightSidebar({
           {/* Cards Tool */}
           <button
             onClick={() => handleToolClick("cards")}
+            disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-violet-50/60 border border-violet-200 rounded-sm hover:border-violet-600 hover:shadow-md transition-all text-xs font-bold text-gray-800 hatch-pattern-purple group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-violet-50/60 border border-violet-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-purple group overflow-hidden items-center justify-center",
               isExpanded ? "flex-col gap-2" : "",
+              hasSources
+                ? "hover:border-violet-600 hover:shadow-md"
+                : "opacity-40 grayscale cursor-not-allowed",
             )}
             style={{
               backgroundImage:
