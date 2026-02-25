@@ -169,6 +169,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
 
         <div className="flex-1 w-full h-full overflow-hidden">
           <ChatPanel
+            notebookId={notebookId}
             onOpenLeft={
               !isLeftExpanded ? () => setIsLeftExpanded(true) : undefined
             }
@@ -211,6 +212,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
       {/* Main Center Panel */}
       <div className="flex-1 min-w-0 h-full relative overflow-hidden bg-white">
         <ChatPanel
+          notebookId={notebookId}
           onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}
         />
         {(isDraggingLeft || isDraggingRight) && (

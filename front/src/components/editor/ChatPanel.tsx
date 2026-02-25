@@ -4,16 +4,31 @@ import { useState, useRef, useEffect } from "react";
 import { useNotebookStore } from "@/store/notebookStore";
 
 interface ChatPanelProps {
+  notebookId: string;
   isMobile?: boolean;
   onOpenLeft?: () => void;
 }
 
-export function ChatPanel({}: ChatPanelProps) {
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  stages?: { stage: string; message: string; progress: number }[];
+  metadata?: { intent?: string; [key: string]: unknown };
+  isStreaming?: boolean;
+}
+
+export function ChatPanel({ notebookId }: ChatPanelProps) {
   const { sources, selectedIds } = useNotebookStore();
   const hasSources = sources.length > 0;
 
   const [inputValue, setInputValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -23,16 +38,175 @@ export function ChatPanel({}: ChatPanelProps) {
     }
   }, [inputValue]);
 
+  const handleSend = async () => {
+    if (!inputValue.trim() || isSending) return;
+
+    const userMsg: ChatMessage = {
+      id: "usr_" + Date.now(),
+      role: "user",
+      content: inputValue.trim(),
+    };
+
+    const aiMsgId = "ai_" + Date.now();
+    const aiMsg: ChatMessage = {
+      id: aiMsgId,
+      role: "assistant",
+      content: "",
+      stages: [],
+      isStreaming: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, aiMsg]);
+    setInputValue("");
+    setIsSending(true);
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          notebook_id: notebookId,
+          content: userMsg.content,
+          session_id: sessionId,
+          source_id: null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let buffer = "";
+      let currentEvent = "message";
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              currentEvent = line.substring(7).trim();
+            } else if (line.startsWith("event:")) {
+              currentEvent = line.substring(6).trim();
+            } else if (line.startsWith("data: ")) {
+              const dataStr = line.substring(6);
+              if (dataStr === "[DONE]") {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
+                  ),
+                );
+                continue;
+              }
+
+              if (currentEvent === "session") {
+                try {
+                  const data = JSON.parse(dataStr);
+                  if (data.session_id) setSessionId(data.session_id);
+                } catch {
+                  // ignore
+                }
+              } else if (currentEvent === "stage") {
+                try {
+                  const data = JSON.parse(dataStr);
+                  setMessages((prev) =>
+                    prev.map((msg) => {
+                      if (msg.id === aiMsgId) {
+                        const stages = [...(msg.stages || []), data];
+                        return { ...msg, stages };
+                      }
+                      return msg;
+                    }),
+                  );
+                } catch {
+                  // ignore
+                }
+              } else if (currentEvent === "metadata") {
+                try {
+                  const data = JSON.parse(dataStr);
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === aiMsgId ? { ...msg, metadata: data } : msg,
+                    ),
+                  );
+                } catch {
+                  // ignore
+                }
+              } else if (currentEvent === "done") {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
+                  ),
+                );
+              } else {
+                let chunkText = dataStr;
+                try {
+                  if (chunkText.startsWith('"') && chunkText.endsWith('"')) {
+                    chunkText = JSON.parse(chunkText);
+                  }
+                } catch {
+                  // ignore
+                }
+
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === aiMsgId
+                      ? { ...msg, content: msg.content + chunkText }
+                      : msg,
+                  ),
+                );
+              }
+            } else if (line === "") {
+              currentEvent = "message";
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Chat error:", e);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMsgId
+            ? {
+                ...msg,
+                content: msg.content + "\n\n*Error: Failed to get response.*",
+                isStreaming: false,
+              }
+            : msg,
+        ),
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Handle submit here
-      if (inputValue.trim()) {
-        console.log("Submit:", inputValue);
-        setInputValue("");
-      }
+      handleSend();
     }
   };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const markdownContent = `
 These documents mainly explore the integration and application of **Large Language Models (LLM)** and **Agentic** architectures in modern recommendation systems.
@@ -40,18 +214,6 @@ These documents mainly explore the integration and application of **Large Langua
 The content details advanced technologies ranging from **Transformer** infrastructure to Retrieval-Augmented Generation (**RAG**), specifically leveraging Knowledge Graphs and Multi-Agent frameworks (like [LangGraph](#)) to enhance system reasoning and planning capabilities.
 
 Through a specific movie recommendation project case, the documents demonstrate how to build complex backend systems containing microservices, real-time data pipelines, and automated evaluation feedback loops.
-  `.trim();
-
-  const responseMarkdown = `
-Introducing **Skills** and designing an **Agentic Framework** are core to building modern autonomous AI systems.
-
-### 1. Skill Encapsulation Design
-"Skills" are not just API calls; they should be designed as independent modules.
-
-- **Skill-as-a-Folder**
-  Standardize by encapsulating each Skill as a folder containing \`SKILL.md\`.
-- **Stateless Atomic Design**
-  Input → Execution → Output. Skills should not retain conversation history.
   `.trim();
 
   return (
@@ -83,92 +245,124 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
       <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-16 pt-8 pb-40">
         {hasSources ? (
           <div className="max-w-3xl mx-auto space-y-12">
-            {/* Summary Section */}
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-gray-200 pb-6 gap-4">
-                <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight uppercase leading-none">
-                  Agentic AI Overview
-                </h1>
-                <div className="flex gap-2 self-start sm:self-auto">
-                  <button
-                    className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
-                    title="Copy"
-                  >
-                    <span className="material-symbols-outlined icon-sm">
-                      content_copy
+            {messages.length === 0 && (
+              <>
+                {/* Summary Section */}
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-gray-200 pb-6 gap-4">
+                    <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight uppercase leading-none">
+                      Agentic AI Overview
+                    </h1>
+                    <div className="flex gap-2 self-start sm:self-auto">
+                      <button
+                        className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
+                        title="Copy"
+                      >
+                        <span className="material-symbols-outlined icon-sm">
+                          content_copy
+                        </span>
+                      </button>
+                      <button
+                        className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
+                        title="Save"
+                      >
+                        <span className="material-symbols-outlined icon-sm">
+                          bookmark_border
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <MarkdownRenderer content={markdownContent} />
+
+                  <div className="flex flex-wrap gap-3 pt-4">
+                    <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
+                      Suggest related topics
+                    </button>
+                    <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
+                      Draft summary
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                    <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
+                      Beginner&apos;s Guide
+                    </span>
+                    <span className="block text-sm font-bold text-black">
+                      How to use AWS to build Agentic AI?
                     </span>
                   </button>
-                  <button
-                    className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
-                    title="Save"
-                  >
-                    <span className="material-symbols-outlined icon-sm">
-                      bookmark_border
+                  <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
+                    <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
+                      Comparison
+                    </span>
+                    <span className="block text-sm font-bold text-black">
+                      LangGraph vs LlamaIndex pros &amp; cons.
+                    </span>
+                  </button>
+                  <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all md:col-span-2 group hover:bg-accent-light/30">
+                    <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
+                      Best Practices
+                    </span>
+                    <span className="block text-sm font-bold text-black">
+                      Ensuring AI agent safety &amp; performance in production?
                     </span>
                   </button>
                 </div>
-              </div>
 
-              <MarkdownRenderer content={markdownContent} />
-
-              <div className="flex flex-wrap gap-3 pt-4">
-                <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
-                  Suggest related topics
-                </button>
-                <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
-                  Draft summary
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
-                <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
-                  Beginner&apos;s Guide
-                </span>
-                <span className="block text-sm font-bold text-black">
-                  How to use AWS to build Agentic AI?
-                </span>
-              </button>
-              <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30">
-                <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
-                  Comparison
-                </span>
-                <span className="block text-sm font-bold text-black">
-                  LangGraph vs LlamaIndex pros &amp; cons.
-                </span>
-              </button>
-              <button className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all md:col-span-2 group hover:bg-accent-light/30">
-                <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
-                  Best Practices
-                </span>
-                <span className="block text-sm font-bold text-black">
-                  Ensuring AI agent safety &amp; performance in production?
-                </span>
-              </button>
-            </div>
-
-            <div className="flex justify-center py-4">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white px-3 py-1">
-                Today, 2:34 PM
-              </span>
-            </div>
-
-            <div className="flex justify-end w-full">
-              <div className="bg-gray-100 text-black px-4 sm:px-6 py-4 border border-black shadow-hard-sm max-w-[90%] sm:max-w-[80%]">
-                <p className="text-sm font-medium">
-                  I expect how to introduce skills and framework design.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-start w-full pb-8">
-              <div className="w-full bg-white border border-black p-4 sm:p-8 shadow-hard relative mt-4">
-                <div className="absolute -top-3 -left-3 bg-accent-main border border-black px-3 py-1 text-xs font-bold uppercase text-white shadow-sm">
-                  AI Response
+                <div className="flex justify-center py-4">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white px-3 py-1">
+                    Today, 2:34 PM
+                  </span>
                 </div>
-                <MarkdownRenderer content={responseMarkdown} />
-              </div>
+              </>
+            )}
+
+            <div className="flex flex-col gap-6">
+              {messages.map((msg) => (
+                <div key={msg.id} className="w-full">
+                  {msg.role === "user" ? (
+                    <div className="flex justify-end w-full">
+                      <div className="bg-gray-100 text-black px-4 sm:px-6 py-4 border border-black shadow-hard-sm max-w-[90%] sm:max-w-[80%]">
+                        <p className="text-sm font-medium whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-start w-full">
+                      <div className="w-full bg-white border border-black p-4 sm:p-8 shadow-hard relative mt-4">
+                        <div className="absolute -top-3 -left-3 bg-accent-main border border-black px-3 py-1 text-xs font-bold uppercase text-white shadow-sm flex items-center gap-2">
+                          AI Response
+                          {msg.metadata?.intent && (
+                            <span className="text-[9px] bg-black/20 px-1 rounded-sm">
+                              {msg.metadata.intent}
+                            </span>
+                          )}
+                        </div>
+                        {msg.stages &&
+                          msg.stages.length > 0 &&
+                          msg.isStreaming && (
+                            <div className="mb-4 text-xs font-mono text-gray-500 bg-gray-50 border border-dotted border-gray-300 p-2 overflow-hidden truncate">
+                              <span className="material-symbols-outlined text-[14px] align-middle mr-1 animate-spin">
+                                progress_activity
+                              </span>
+                              {msg.stages[msg.stages.length - 1].stage}:{" "}
+                              {msg.stages[msg.stages.length - 1].message}
+                            </div>
+                          )}
+                        <MarkdownRenderer content={msg.content} />
+                        {msg.isStreaming && (
+                          <span className="inline-block w-2 h-4 bg-black/50 animate-pulse ml-1 align-middle" />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
             </div>
           </div>
         ) : (
@@ -225,14 +419,10 @@ Introducing **Skills** and designing an **Agentic Framework** are core to buildi
               </div>
               <button
                 className="p-2 bg-accent-main border border-black text-white hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isSending}
                 onClick={() => {
-                  if (inputValue.trim()) {
-                    console.log("Submit:", inputValue);
-                    setInputValue("");
-                    if (textareaRef.current) {
-                      textareaRef.current.style.height = "auto";
-                    }
+                  if (inputValue.trim() && !isSending) {
+                    handleSend();
                   }
                 }}
               >
