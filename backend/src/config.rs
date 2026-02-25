@@ -34,10 +34,20 @@ pub struct JwtConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LlmConfig {
+    /// Provider name: "gemini", "openai", "anthropic", "deepseek", "openai_compatible"
+    pub provider: String,
     pub api_key: String,
     pub model: String,
     pub embedding_model: String,
     pub max_tokens: u32,
+    /// Custom base URL for the LLM API (optional, used by openai_compatible or to override defaults)
+    pub base_url: Option<String>,
+    /// Separate provider for embeddings (optional, defaults to main provider)
+    pub embedding_provider: Option<String>,
+    /// Separate API key for embeddings (optional, defaults to main api_key)
+    pub embedding_api_key: Option<String>,
+    /// Custom base URL for the embedding API (optional)
+    pub embedding_base_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -84,6 +94,8 @@ impl AppConfig {
                     .parse()?,
             },
             llm: LlmConfig {
+                provider: std::env::var("LLM_PROVIDER")
+                    .unwrap_or_else(|_| "gemini".to_string()),
                 api_key: std::env::var("LLM_API_KEY")
                     .or_else(|_| std::env::var("GEMINI_API_KEY"))
                     .unwrap_or_default(),
@@ -94,6 +106,10 @@ impl AppConfig {
                 max_tokens: std::env::var("LLM_MAX_TOKENS")
                     .unwrap_or_else(|_| "4096".to_string())
                     .parse()?,
+                base_url: std::env::var("LLM_BASE_URL").ok(),
+                embedding_provider: std::env::var("EMBEDDING_PROVIDER").ok(),
+                embedding_api_key: std::env::var("EMBEDDING_API_KEY").ok(),
+                embedding_base_url: std::env::var("EMBEDDING_BASE_URL").ok(),
             },
             upload: UploadConfig {
                 dir: std::env::var("UPLOAD_DIR").unwrap_or_else(|_| "./uploads".to_string()),

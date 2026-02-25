@@ -28,7 +28,6 @@ impl RigEmbeddingProvider {
 #[async_trait::async_trait]
 impl EmbeddingProvider for RigEmbeddingProvider {
     async fn embed(&self, text: &str) -> anyhow::Result<Vec<f64>> {
-        use rig::embeddings::EmbeddingModel;
         let model = self.llm.embedding_model();
         let embeddings = model
             .embed_text(text)

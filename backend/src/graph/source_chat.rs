@@ -1,6 +1,6 @@
 use crate::db::Db;
 use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, StageSender};
-use crate::llm::manager::{stream_prompt_to_sse, LlmManager};
+use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
     Context, FlowRunner, GraphBuilder, GraphError, InMemorySessionStorage, NextAction, Session,
@@ -175,12 +175,12 @@ impl Task for SourceResponseTask {
                 ))
             })?;
 
-        let agent = self.llm.agent().preamble(&system_prompt).build();
+        let agent = self.llm.agent_with_preamble(&system_prompt);
 
-        let response =
-            stream_prompt_to_sse(&agent, &data.message, &self.tx, "Source chat LLM call")
-                .await
-                .map_err(GraphError::TaskExecutionFailed)?;
+        let response = agent
+            .stream_to_sse(&data.message, &self.tx, "Source chat LLM call")
+            .await
+            .map_err(GraphError::TaskExecutionFailed)?;
 
         data.response = response;
         ctx.set("data", data).await;

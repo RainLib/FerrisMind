@@ -4,7 +4,6 @@ use graph_flow::{
     Context, FlowRunner, GraphBuilder, GraphError, InMemorySessionStorage, NextAction, Session,
     SessionStorage, Task, TaskResult,
 };
-use rig::completion::Prompt;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::info;
@@ -32,9 +31,9 @@ impl Task for ResearchTask {
         info!("Executing ResearchTask for query: {}", data.query);
 
         // Real LLM call using rig agent
-        let agent = self.llm.agent()
-            .preamble("You are a research assistant. Extract 3 key facts or research points about the user's query.")
-            .build();
+        let agent = self.llm.agent_with_preamble(
+            "You are a research assistant. Extract 3 key facts or research points about the user's query.",
+        );
 
         let response = agent
             .prompt(&data.query)
@@ -73,9 +72,9 @@ impl Task for SummarizeTask {
         let notes = data.research_notes.join("\n\n---\n\n");
 
         // Real LLM call for summarization
-        let agent = self.llm.agent()
-            .preamble("You are a summarization assistant. Create a concise summary of the research notes provided.")
-            .build();
+        let agent = self.llm.agent_with_preamble(
+            "You are a summarization assistant. Create a concise summary of the research notes provided.",
+        );
 
         let prompt = format!("Query: {}\n\nResearch Notes:\n{}", data.query, notes);
         let response = agent

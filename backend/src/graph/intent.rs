@@ -1,5 +1,5 @@
 use crate::graph::context::ChatFlowData;
-use crate::llm::manager::{prompt_with_retry, LlmManager};
+use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{Context, GraphError, NextAction, Task, TaskResult};
 use serde::Deserialize;
@@ -77,8 +77,9 @@ impl Task for IntentTask {
             }
         };
 
-        let agent = self.llm.agent().build();
-        let raw = prompt_with_retry(&agent, &prompt_text, "Intent classification LLM call")
+        let agent = self.llm.agent();
+        let raw = agent
+            .prompt_with_retry(&prompt_text, "Intent classification LLM call")
             .await
             .map_err(GraphError::TaskExecutionFailed)?;
 

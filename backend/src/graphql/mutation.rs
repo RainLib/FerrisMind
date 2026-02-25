@@ -504,9 +504,8 @@ impl MutationRoot {
             doc.filename
         );
 
-        let agent = llm.agent().preamble(&preamble).build();
+        let agent = llm.agent_with_preamble(&preamble);
 
-        use rig::completion::Prompt;
         let summary_text = agent
             .prompt(&content)
             .await

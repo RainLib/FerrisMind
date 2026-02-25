@@ -1,6 +1,6 @@
 use crate::db::Db;
 use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, SearchHit, StageSender};
-use crate::llm::manager::{stream_prompt_to_sse, LlmManager};
+use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
     Context, FlowRunner, GraphBuilder, GraphError, InMemorySessionStorage, NextAction, Session,
@@ -189,7 +189,6 @@ impl Task for ChatSearchTask {
 
 impl ChatSearchTask {
     async fn get_embedding(&self, text: &str) -> Result<Vec<f64>, GraphError> {
-        use rig::embeddings::EmbeddingModel;
         let model = self.llm.embedding_model();
         let emb = model.embed_text(text).await.map_err(|e| {
             GraphError::TaskExecutionFailed(format!("Embedding failed: {}", e))
@@ -309,9 +308,10 @@ impl Task for ChatResponseTask {
                 GraphError::TaskExecutionFailed(format!("Failed to render chat/system: {}", e))
             })?;
 
-        let agent = self.llm.agent().preamble(&system_prompt).build();
+        let agent = self.llm.agent_with_preamble(&system_prompt);
 
-        let response = stream_prompt_to_sse(&agent, &data.message, &self.tx, "Chat LLM call")
+        let response = agent
+            .stream_to_sse(&data.message, &self.tx, "Chat LLM call")
             .await
             .map_err(GraphError::TaskExecutionFailed)?;
 

@@ -2,7 +2,7 @@ use crate::db::Db;
 use crate::graph::context::{
     emit_stage, ChatFlowData, SearchHit, SearchStrategy, StageSender, SubAnswer,
 };
-use crate::llm::manager::{prompt_with_retry, stream_prompt_to_sse, LlmManager};
+use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
     Context, FlowRunner, GraphBuilder, GraphError, InMemorySessionStorage, NextAction, Session,
@@ -53,8 +53,9 @@ impl Task for AskEntryTask {
                 GraphError::TaskExecutionFailed(format!("Failed to render ask/entry prompt: {}", e))
             })?;
 
-        let agent = self.llm.agent().build();
-        let raw = prompt_with_retry(&agent, &prompt_text, "AskEntry LLM call")
+        let agent = self.llm.agent();
+        let raw = agent
+            .prompt_with_retry(&prompt_text, "AskEntry LLM call")
             .await
             .map_err(GraphError::TaskExecutionFailed)?;
 
@@ -152,7 +153,6 @@ impl Task for AskSearchTask {
 
 impl AskSearchTask {
     async fn get_embedding(&self, text: &str) -> Result<Vec<f64>, GraphError> {
-        use rig::embeddings::EmbeddingModel;
         let model = self.llm.embedding_model();
         let emb = model.embed_text(text).await.map_err(|e| {
             GraphError::TaskExecutionFailed(format!("Embedding failed: {}", e))
@@ -278,8 +278,9 @@ impl Task for AskQueryProcessTask {
                     ))
                 })?;
 
-            let agent = self.llm.agent().build();
-            let answer = prompt_with_retry(&agent, &prompt_text, "QueryProcess LLM call")
+            let agent = self.llm.agent();
+            let answer = agent
+                .prompt_with_retry(&prompt_text, "QueryProcess LLM call")
                 .await
                 .map_err(GraphError::TaskExecutionFailed)?;
 
@@ -366,11 +367,11 @@ impl Task for AskFinalAnswerTask {
                 ))
             })?;
 
-        let agent = self.llm.agent().build();
-        let response =
-            stream_prompt_to_sse(&agent, &prompt_text, &self.tx, "FinalAnswer LLM call")
-                .await
-                .map_err(GraphError::TaskExecutionFailed)?;
+        let agent = self.llm.agent();
+        let response = agent
+            .stream_to_sse(&prompt_text, &self.tx, "FinalAnswer LLM call")
+            .await
+            .map_err(GraphError::TaskExecutionFailed)?;
 
         data.response = response;
         ctx.set("data", data).await;
