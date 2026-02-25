@@ -54,7 +54,7 @@ pub async fn chat_stream_handler(
     );
 
     // Persist user message
-    if let Err(e) = db
+    match db
         .query(
             "CREATE message SET \
              session = type::record($session_id), \
@@ -74,16 +74,32 @@ pub async fn chat_stream_handler(
         ))
         .await
     {
-        tracing::error!("Failed to persist user message: {}", e);
+        Ok(response) => {
+            if let Err(e) = response.check() {
+                tracing::error!("Failed to persist user message (query error): {}", e);
+            } else {
+                tracing::info!("User message persisted for session {}", session_id);
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to persist user message (transport error): {}", e);
+        }
     }
 
     // Update session timestamp
-    if let Err(e) = db
+    match db
         .query("UPDATE type::record($sid) SET updated_at = time::now()")
         .bind(("sid", session_id.clone()))
         .await
     {
-        tracing::error!("Failed to update session timestamp: {}", e);
+        Ok(response) => {
+            if let Err(e) = response.check() {
+                tracing::error!("Failed to update session timestamp (query error): {}", e);
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to update session timestamp (transport error): {}", e);
+        }
     }
 
     let flow_data = ChatFlowData {
@@ -107,38 +123,84 @@ pub async fn chat_stream_handler(
         .data(serde_json::json!({ "session_id": session_id }).to_string());
     let _ = tx.send(Ok(session_event)).await;
 
+    let nb_id_for_save = notebook_id.clone();
+
     tokio::spawn(async move {
         match router.handle_message(flow_data, &tx).await {
             Ok(result) => {
-                let metadata = serde_json::json!({
-                    "intent": result.intent,
-                    "notebook_id": result.notebook_id,
-                    "source_ids": result.source_ids,
-                    "search_query_count": result.search_strategy.as_ref().map(|s| s.searches.len()).unwrap_or(0),
-                    "search_hit_count": result.search_results.len(),
-                });
+                let response_text = result.response.clone();
+                tracing::info!(
+                    "Graph completed: intent={}, response_len={}",
+                    result.intent,
+                    response_text.len()
+                );
 
+                if response_text.is_empty() {
+                    tracing::warn!("Assistant response is empty — skipping DB persist");
+                } else {
+                    let metadata = serde_json::json!({
+                        "intent": result.intent,
+                        "notebook_id": result.notebook_id,
+                        "source_ids": result.source_ids,
+                        "search_query_count": result.search_strategy.as_ref().map(|s| s.searches.len()).unwrap_or(0),
+                        "search_hit_count": result.search_results.len(),
+                    });
+
+                    match db_for_save
+                        .query(
+                            "CREATE message SET \
+                             session = type::record($session_id), \
+                             role = 'assistant', \
+                             content = $content, \
+                             metadata = $metadata, \
+                             created_at = time::now()",
+                        )
+                        .bind(("session_id", save_session_id.clone()))
+                        .bind(("content", response_text))
+                        .bind(("metadata", metadata))
+                        .await
+                    {
+                        Ok(response) => {
+                            if let Err(e) = response.check() {
+                                tracing::error!(
+                                    "Failed to persist assistant message (query error): {}",
+                                    e
+                                );
+                            } else {
+                                tracing::info!(
+                                    "Assistant message persisted for session {}",
+                                    save_session_id
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                "Failed to persist assistant message (transport error): {}",
+                                e
+                            );
+                        }
+                    }
+                }
+
+                // Update session timestamp after assistant message
                 if let Err(e) = db_for_save
-                    .query(
-                        "CREATE message SET \
-                         session = type::record($session_id), \
-                         role = 'assistant', \
-                         content = $content, \
-                         metadata = $metadata, \
-                         created_at = time::now()",
-                    )
-                    .bind(("session_id", save_session_id))
-                    .bind(("content", result.response.clone()))
-                    .bind(("metadata", metadata))
+                    .query("UPDATE type::record($sid) SET updated_at = time::now()")
+                    .bind(("sid", save_session_id.clone()))
                     .await
                 {
-                    tracing::error!("Failed to persist assistant message: {}", e);
+                    tracing::error!("Failed to update session timestamp after reply: {}", e);
                 }
 
                 let _ = tx
                     .send(Ok(Event::default()
                         .event("metadata")
-                        .data(format!(r#"{{"intent":"{}"}}"#, result.intent))))
+                        .data(
+                            serde_json::json!({
+                                "intent": result.intent,
+                                "notebook_id": nb_id_for_save,
+                            })
+                            .to_string(),
+                        )))
                     .await;
 
                 let _ = tx
@@ -219,7 +281,9 @@ async fn resolve_session(
             "CREATE session SET \
              notebook = type::record($nid), \
              user = type::record($uid), \
-             title = 'Chat'",
+             title = 'Chat', \
+             created_at = time::now(), \
+             updated_at = time::now()",
         )
         .bind(("nid", notebook_id.to_string()))
         .bind(("uid", user_id.to_string()))
