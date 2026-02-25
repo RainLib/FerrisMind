@@ -107,14 +107,15 @@ pub struct CountRow {
     pub total: i64,
 }
 
-/// Message record from SurrealDB
+/// Message record from SurrealDB.
+/// `metadata` is stored as a JSON string to avoid SCHEMAFULL nested field validation.
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct MessageRecord {
     pub id: Option<RecordId>,
     pub session: RecordId,
     pub role: String,
     pub content: String,
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<String>,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -329,7 +330,7 @@ impl From<MessageRecord> for Message {
             session_id: r.session.to_sql(),
             role: r.role,
             content: r.content,
-            metadata: r.metadata.map(|m| m.to_string()),
+            metadata: r.metadata,
             created_at: r.created_at,
         }
     }

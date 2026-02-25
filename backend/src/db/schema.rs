@@ -89,12 +89,29 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
         "DEFINE FIELD session ON message TYPE record<session>;",
         "DEFINE FIELD role ON message TYPE string ASSERT $value IN ['user', 'assistant', 'system'];",
         "DEFINE FIELD content ON message TYPE string;",
-        "DEFINE FIELD metadata ON message TYPE option<object> FLEXIBLE;",
+        "DEFINE FIELD metadata ON message TYPE option<string>;",
         "DEFINE FIELD created_at ON message TYPE datetime DEFAULT time::now();",
         "DEFINE INDEX idx_msg_session ON message FIELDS session;",
     ];
 
     for stmt in statements {
+        if stmt.contains("FIELD metadata ON message") {
+            // message.metadata must be option<string>. Try DEFINE first; if it fails (field exists
+            // with wrong type), REMOVE then DEFINE once. Existing metadata is cleared only on that migration.
+            info!("Executing: {}", stmt);
+            let res = db.query(stmt).await?.check();
+            if let Err(e) = res {
+                info!(
+                    "message.metadata DEFINE failed ({}), migrating to option<string>...",
+                    e
+                );
+                let _ = db.query("REMOVE FIELD metadata ON message;").await?.check();
+                db.query(stmt).await?.check()?;
+                info!("message.metadata redefined as option<string>");
+            }
+            continue;
+        }
+
         info!("Executing: {}", stmt);
         match db.query(stmt).await?.check() {
             Ok(_) => (),

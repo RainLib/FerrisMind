@@ -72,7 +72,8 @@ pub async fn chat_stream_handler(
             serde_json::json!({
                 "notebook_id": notebook_id,
                 "source_ids": input.source_ids,
-            }),
+            })
+            .to_string(),
         ))
         .await
     {
@@ -156,7 +157,7 @@ pub async fn chat_stream_handler(
                 if response_text.is_empty() {
                     tracing::warn!("Assistant response is empty — skipping DB persist");
                 } else {
-                    let metadata = serde_json::json!({
+                    let metadata_obj = serde_json::json!({
                         "intent": result.intent,
                         "notebook_id": result.notebook_id,
                         "source_ids": result.source_ids,
@@ -164,6 +165,7 @@ pub async fn chat_stream_handler(
                         "search_hit_count": result.search_results.len(),
                         "suggested_questions": suggested,
                     });
+                    let metadata_str = metadata_obj.to_string();
 
                     match db_for_save
                         .query(
@@ -176,7 +178,7 @@ pub async fn chat_stream_handler(
                         )
                         .bind(("session_id", save_session_id.clone()))
                         .bind(("content", response_text))
-                        .bind(("metadata", metadata))
+                        .bind(("metadata", metadata_str))
                         .await
                     {
                         Ok(response) => {
