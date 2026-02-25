@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import dynamic from "next/dynamic";
-import { useNotebookStore, ActivityItem } from "@/store/notebookStore";
-
-const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
+import { useNotebookStore } from "@/store/notebookStore";
+import { LexicalEditor } from "./LexicalEditor";
 
 export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
   const { activities, activeActivity, setActivities, setActiveActivity } =
@@ -105,17 +103,10 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
           className="text-3xl font-black text-gray-800 border-none outline-none focus:ring-0 bg-transparent mb-6 placeholder-gray-300 w-full"
           placeholder="Note Title..."
         />
-        <div
-          data-color-mode="light"
-          className="flex-1 w-full overflow-hidden mb-4"
-        >
-          <MDEditor
-            value={content}
-            onChange={(val) => handleSave(val || "")}
-            height="100%"
-            preview="edit"
-            className="w-full border-none! shadow-none!"
-            style={{ backgroundColor: "transparent" }}
+        <div className="flex-1 w-full overflow-hidden mb-4 relative z-0">
+          <LexicalEditor
+            initialMarkdown={content}
+            onChange={(val) => handleSave(val)}
           />
         </div>
       </div>
