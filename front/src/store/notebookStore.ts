@@ -20,6 +20,16 @@ export interface ChatMessage {
   suggestedQuestions?: string[];
 }
 
+export type ActivityType = "note" | "audio" | "video";
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  title: string;
+  content?: string;
+  createdAt: Date;
+}
+
 interface NotebookState {
   sources: Source[];
   selectedIds: Set<string>;
@@ -33,6 +43,17 @@ interface NotebookState {
   setInitialChat: (sessionId: string | null, messages: ChatMessage[]) => void;
   isAddSourceModalOpen: boolean;
   setIsAddSourceModalOpen: (isOpen: boolean) => void;
+  activities: ActivityItem[];
+  setActivities: (
+    activities: ActivityItem[] | ((prev: ActivityItem[]) => ActivityItem[]),
+  ) => void;
+  addActivity: (activity: ActivityItem) => void;
+  activeActivity: { id: string; type: ActivityType } | null;
+  setActiveActivity: (
+    activity: { id: string; type: ActivityType } | null,
+  ) => void;
+  activeDetailId: string | null;
+  setActiveDetailId: (id: string | null) => void;
 }
 
 export const useNotebookStore = create<NotebookState>((set) => ({
@@ -62,4 +83,16 @@ export const useNotebookStore = create<NotebookState>((set) => ({
     })),
   isAddSourceModalOpen: false,
   setIsAddSourceModalOpen: (isOpen) => set({ isAddSourceModalOpen: isOpen }),
+  activities: [],
+  setActivities: (updater) =>
+    set((state) => ({
+      activities:
+        typeof updater === "function" ? updater(state.activities) : updater,
+    })),
+  addActivity: (activity) =>
+    set((state) => ({ activities: [activity, ...state.activities] })),
+  activeActivity: null,
+  setActiveActivity: (activity) => set({ activeActivity: activity }),
+  activeDetailId: null,
+  setActiveDetailId: (id) => set({ activeDetailId: id }),
 }));

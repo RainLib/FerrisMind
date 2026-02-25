@@ -1,40 +1,102 @@
-"use client";
-
-import * as React from "react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { PanelDetailView } from "./PanelDetailView";
-import { useNotebookStore } from "@/store/notebookStore";
+import { useNotebookStore, ActivityItem } from "@/store/notebookStore";
+import { NoteEditorPanel } from "./NoteEditorPanel";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
 interface RightSidebarProps {
   isExpanded?: boolean;
   onToggle?: () => void;
-  isPanel?: boolean;
 }
 
 export function RightSidebar({
   isExpanded = true,
   onToggle,
-  isPanel,
 }: RightSidebarProps) {
-  const { sources } = useNotebookStore();
+  const {
+    sources,
+    activities,
+    activeActivity,
+    addActivity,
+    setActiveActivity,
+    setActivities,
+  } = useNotebookStore();
   const hasSources = sources.length > 0;
   const [activeTool, setActiveTool] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editingId]);
 
   const handleToolClick = (toolId: string) => {
     if (!isExpanded && onToggle) onToggle();
     setActiveTool(toolId);
   };
 
+  const handleAddNote = () => {
+    if (!isExpanded && onToggle) onToggle();
+    const newNoteId = `note-${Date.now()}`;
+    const newNote: ActivityItem = {
+      id: newNoteId,
+      type: "note",
+      title: `New Note ${Math.floor(Math.random() * 1000)}`,
+      createdAt: new Date(),
+      content: "",
+    };
+    addActivity(newNote);
+    setActiveActivity({ id: newNoteId, type: "note" });
+  };
+
+  const saveRename = (id: string) => {
+    if (editTitle.trim()) {
+      setActivities((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, title: editTitle.trim() } : a)),
+      );
+    }
+    setEditingId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === "Enter") saveRename(id);
+    if (e.key === "Escape") setEditingId(null);
+  };
+
+  if (activeActivity?.type === "note") {
+    return (
+      <aside
+        className={cn(
+          "flex flex-col h-full bg-white border-l border-border-bold relative w-full",
+        )}
+      >
+        {isExpanded ? (
+          <NoteEditorPanel key={activeActivity?.id} onToggle={onToggle} />
+        ) : (
+          <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-studio shrink-0">
+            <button
+              onClick={onToggle}
+              className="mx-auto text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all p-1 relative group"
+            >
+              <span className="material-symbols-outlined icon-sm">
+                dock_to_left
+              </span>
+            </button>
+          </div>
+        )}
+      </aside>
+    );
+  }
+
   return (
     <aside
       className={cn(
-        "flex flex-col h-full bg-bg-studio border-l border-border-bold relative",
-        !isPanel &&
-          (isExpanded
-            ? "w-80"
-            : "w-16 transition-all duration-300 ease-in-out"),
-        isPanel && "w-full",
+        "flex flex-col h-full bg-bg-studio border-l border-border-bold relative w-full",
       )}
     >
       <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-studio shrink-0">
@@ -211,28 +273,136 @@ export function RightSidebar({
 
       <div className="flex-1 px-5 py-5 flex flex-col items-center justify-start overflow-y-auto">
         {isExpanded ? (
-          <div
-            className="w-full h-48 border-2 border-dashed border-gray-300 rounded-sm relative flex flex-col items-center justify-center p-6 text-center"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(45deg, #e5e5e5 0, #e5e5e5 1px, transparent 0, transparent 10px)",
-            }}
-          >
-            <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-white px-1 border border-gray-200">
-              [ST-EMPTY]
-            </div>
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-200 mb-3 shadow-sm">
-              <span className="material-symbols-outlined text-gray-300 icon-lg">
-                auto_awesome
-              </span>
-            </div>
-            <h3 className="text-sm font-bold text-gray-600 mb-1">
-              No generated content yet
-            </h3>
-            <p className="text-xs text-gray-400 font-medium leading-relaxed">
-              Select a tool above to start creating
-            </p>
-          </div>
+          <>
+            {activities.length > 0 ? (
+              <div className="w-full mb-6 pb-20">
+                <div className="flex flex-col gap-2 w-full mt-2">
+                  {activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className={cn(
+                        "w-full text-left p-2 rounded-sm flex items-center justify-between group transition-colors border relative cursor-pointer",
+                        activeActivity?.id === activity.id
+                          ? "bg-white border-black shadow-hard-sm"
+                          : "border-transparent hover:border-gray-300 hover:bg-gray-100",
+                      )}
+                      onClick={() => {
+                        // Prevent click if editing
+                        if (editingId === activity.id) return;
+                        setActiveActivity({
+                          id: activity.id,
+                          type: activity.type,
+                        });
+                      }}
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden flex-1 m-1">
+                        <span className="material-symbols-outlined icon-sm text-gray-500 shrink-0">
+                          {activity.type === "note"
+                            ? "article"
+                            : activity.type === "audio"
+                              ? "graphic_eq"
+                              : "smart_display"}
+                        </span>
+                        <div className="flex flex-col overflow-hidden flex-1">
+                          {editingId === activity.id ? (
+                            <input
+                              ref={editInputRef}
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onBlur={() => saveRename(activity.id)}
+                              onKeyDown={(e) => handleKeyDown(e, activity.id)}
+                              className="text-xs font-bold text-gray-800 bg-white border border-gray-300 px-1 py-0.5 outline-none rounded"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <span className="text-xs font-bold text-gray-800 truncate">
+                              {activity.title}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-500 font-medium">
+                            Just now
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        className="shrink-0 ml-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DropdownMenu.Root>
+                          <DropdownMenu.Trigger asChild>
+                            <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-black/5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="material-symbols-outlined icon-sm">
+                                more_vert
+                              </span>
+                            </button>
+                          </DropdownMenu.Trigger>
+                          <DropdownMenu.Portal>
+                            <DropdownMenu.Content
+                              align="end"
+                              className="min-w-[120px] bg-white rounded-md p-1 shadow-lg border border-gray-200 z-50 text-xs font-medium"
+                            >
+                              <DropdownMenu.Item
+                                className="flex items-center px-2 py-1.5 outline-none cursor-pointer hover:bg-gray-100 rounded text-gray-700"
+                                onClick={() => {
+                                  setEditTitle(activity.title);
+                                  setEditingId(activity.id);
+                                }}
+                              >
+                                <span className="material-symbols-outlined icon-sm mr-2 text-gray-500">
+                                  edit
+                                </span>
+                                Rename
+                              </DropdownMenu.Item>
+                              <DropdownMenu.Item
+                                className="flex items-center px-2 py-1.5 outline-none cursor-pointer hover:bg-red-50 hover:text-red-700 rounded text-red-600"
+                                onClick={() => {
+                                  setActivities((prev) =>
+                                    prev.filter((a) => a.id !== activity.id),
+                                  );
+                                  if (activeActivity?.id === activity.id) {
+                                    setActiveActivity(null);
+                                  }
+                                }}
+                              >
+                                <span className="material-symbols-outlined icon-sm mr-2">
+                                  delete
+                                </span>
+                                Delete
+                              </DropdownMenu.Item>
+                            </DropdownMenu.Content>
+                          </DropdownMenu.Portal>
+                        </DropdownMenu.Root>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-sm relative flex flex-col items-center justify-center p-6 text-center"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(45deg, #e5e5e5 0, #e5e5e5 1px, transparent 0, transparent 10px)",
+                }}
+              >
+                <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-white px-1 border border-gray-200">
+                  [ST-EMPTY]
+                </div>
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-200 mb-3 shadow-sm">
+                  <span className="material-symbols-outlined text-gray-300 icon-lg">
+                    auto_awesome
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-gray-600 mb-1">
+                  No generated content yet
+                </h3>
+                <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                  Select a tool above to start creating
+                </p>
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center gap-4 mt-4 w-full">
             <button
@@ -251,12 +421,18 @@ export function RightSidebar({
         )}
       >
         {isExpanded ? (
-          <button className="pointer-events-auto bg-black text-white border border-black px-6 py-3 shadow-[4px_4px_0px_0px_#f59e0b] hover:shadow-[6px_6px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all flex items-center gap-2 font-black text-sm uppercase tracking-wide">
+          <button
+            onClick={handleAddNote}
+            className="pointer-events-auto bg-black text-white border border-black px-6 py-3 shadow-[4px_4px_0px_0px_#f59e0b] hover:shadow-[6px_6px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all flex items-center gap-2 font-black text-sm uppercase tracking-wide"
+          >
             <span className="material-symbols-outlined icon-sm">note_add</span>
             New Note
           </button>
         ) : (
-          <button className="pointer-events-auto bg-black text-white border border-black w-10 h-10 shadow-[2px_2px_0px_0px_#f59e0b] flex items-center justify-center hover:shadow-[4px_4px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all">
+          <button
+            onClick={handleAddNote}
+            className="pointer-events-auto bg-black text-white border border-black w-10 h-10 shadow-[2px_2px_0px_0px_#f59e0b] flex items-center justify-center hover:shadow-[4px_4px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all"
+          >
             <span className="material-symbols-outlined icon-sm">note_add</span>
           </button>
         )}

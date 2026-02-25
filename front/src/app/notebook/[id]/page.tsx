@@ -18,6 +18,7 @@ export default function Editor() {
   const [isEditing, setIsEditing] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const { setSources, setInitialChat, setSelectedIds } = useNotebookStore();
 
@@ -100,6 +101,8 @@ export default function Editor() {
       } catch (e) {
         console.error(e);
         setTitle("Error Loading Notebook");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -129,6 +132,44 @@ export default function Editor() {
       setIsEditing(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center w-screen h-screen bg-bg-main relative overflow-hidden">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(45deg, #000, #000 1px, transparent 1px, transparent 10px)",
+          }}
+        ></div>
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-white shadow-hard border-2 border-black animate-pulse mb-8 relative">
+            <Logo className="w-12 h-12 text-black" />
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-accent-main border-2 border-black rounded-full animate-bounce"></div>
+          </div>
+          <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-full border border-black shadow-hard-sm">
+            <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce leading-none"></div>
+            <div
+              className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce leading-none"
+              style={{ animationDelay: "0.15s" }}
+            ></div>
+            <div
+              className="w-2.5 h-2.5 bg-yellow-500 rounded-full animate-bounce leading-none"
+              style={{ animationDelay: "0.3s" }}
+            ></div>
+            <div
+              className="w-2.5 h-2.5 bg-green-500 rounded-full animate-bounce leading-none"
+              style={{ animationDelay: "0.45s" }}
+            ></div>
+          </div>
+          <h2 className="mt-6 text-sm font-black tracking-widest text-black uppercase">
+            Loading Studio
+          </h2>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

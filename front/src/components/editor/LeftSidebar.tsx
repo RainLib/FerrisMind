@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AddSourceModal } from "@/components/editor/AddSourceModal";
 import { PanelDetailView } from "./PanelDetailView";
@@ -234,7 +235,6 @@ export function LeftSidebar({
   onToggle,
   notebookId,
 }: LeftSidebarProps) {
-  const [activeDetailId, setActiveDetailId] = useState<string | null>(null);
   const [documentContent, setDocumentContent] =
     useState<DocumentContent | null>(null);
   const [isContentLoading, setIsContentLoading] = useState(false);
@@ -247,6 +247,8 @@ export function LeftSidebar({
     addSelectedId,
     isAddSourceModalOpen,
     setIsAddSourceModalOpen,
+    activeDetailId,
+    setActiveDetailId,
   } = useNotebookStore();
 
   // Removed redundant loadDocuments since it's fetched in GET_NOTEBOOK_INITIAL_DATA in page.tsx
@@ -549,7 +551,11 @@ export function LeftSidebar({
   const activeSource = sources.find((s) => s.id === activeDetailId);
 
   return (
-    <aside className="w-full h-full flex flex-col bg-bg-sources border-r border-border-bold relative overflow-hidden">
+    <aside
+      className={cn(
+        "flex flex-col h-full bg-bg-studio border-r border-border-main w-full",
+      )}
+    >
       <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-sources shrink-0">
         <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest overflow-hidden whitespace-nowrap text-ellipsis">
           Sources

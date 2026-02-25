@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LeftSidebar } from "./LeftSidebar";
 import { ChatPanel } from "./ChatPanel";
 import { RightSidebar } from "./RightSidebar";
 import { CollapsedLeftSidebar } from "./CollapsedLeftSidebar";
 import { CollapsedRightSidebar } from "./CollapsedRightSidebar";
+import { useNotebookStore } from "@/store/notebookStore";
+
+const MIN_LEFT_WIDTH = 240;
+const MIN_RIGHT_WIDTH = 240;
+const MIN_CENTER_WIDTH = 300;
+const HANDLE_WIDTH = 10;
 
 function ResizeHandle({
   onMouseDown,
@@ -43,6 +49,63 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
 
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
   const [isDraggingRight, setIsDraggingRight] = useState(false);
+  const prevLeftWidthRef = useRef(320);
+  const prevRightWidthRef = useRef(320);
+
+  const { activeActivity, activeDetailId } = useNotebookStore();
+
+  // Handle right sidebar dynamic width for Note Editor
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (activeActivity?.type === "note") {
+      // Capture width only once before expanding
+      if (!isRightExpanded) {
+        prevRightWidthRef.current = rightWidth;
+      }
+      timer = setTimeout(() => {
+        setIsRightExpanded(true);
+        setRightWidth(Math.max(window.innerWidth * 0.3, 400));
+      }, 0);
+    } else {
+      timer = setTimeout(() => {
+        setRightWidth(prevRightWidthRef.current);
+      }, 0);
+    }
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeActivity?.id, activeActivity?.type]);
+
+  // Handle left sidebar dynamic width for Source Details
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (activeDetailId) {
+      if (!isLeftExpanded || leftWidth < window.innerWidth * 0.3) {
+        prevLeftWidthRef.current = leftWidth;
+      }
+      timer = setTimeout(() => {
+        setIsLeftExpanded(true);
+        setLeftWidth(Math.max(window.innerWidth * 0.3, 320));
+      }, 0);
+    } else {
+      timer = setTimeout(() => {
+        setLeftWidth(prevLeftWidthRef.current);
+      }, 0);
+    }
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDetailId]);
+
+  // Handle left sidebar dynamic width on toggle
+  const toggleLeftSidebar = () => {
+    if (!isLeftExpanded) {
+      prevLeftWidthRef.current = leftWidth;
+      setLeftWidth(Math.max(window.innerWidth * 0.3, 320));
+      setIsLeftExpanded(true);
+    } else {
+      setLeftWidth(prevLeftWidthRef.current);
+      setIsLeftExpanded(false);
+    }
+  };
 
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -62,9 +125,19 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
   }, []);
 
   // Left drag logic
-  const handleLeftMouseMove = useCallback((e: MouseEvent) => {
-    setLeftWidth(Math.max(240, Math.min(window.innerWidth * 0.6, e.clientX)));
-  }, []);
+  const handleLeftMouseMove = useCallback(
+    (e: MouseEvent) => {
+      const maxLeft =
+        window.innerWidth - rightWidth - MIN_CENTER_WIDTH - HANDLE_WIDTH * 2;
+      const newWidth = Math.max(
+        MIN_LEFT_WIDTH,
+        Math.min(e.clientX, maxLeft - HANDLE_WIDTH),
+      );
+      setLeftWidth(newWidth);
+      prevLeftWidthRef.current = newWidth; // Update recorded width on drag
+    },
+    [rightWidth],
+  );
 
   const handleLeftMouseUp = useCallback(() => {
     setIsDraggingLeft(false);
@@ -89,14 +162,20 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
   }, [isDraggingLeft, handleLeftMouseMove, handleLeftMouseUp]);
 
   // Right drag logic
-  const handleRightMouseMove = useCallback((e: MouseEvent) => {
-    setRightWidth(
-      Math.max(
-        240,
-        Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX),
-      ),
-    );
-  }, []);
+  const handleRightMouseMove = useCallback(
+    (e: MouseEvent) => {
+      const maxRight =
+        window.innerWidth - leftWidth - MIN_CENTER_WIDTH - HANDLE_WIDTH * 2;
+      const minRight = activeActivity?.type === "note" ? 400 : MIN_RIGHT_WIDTH;
+      const newWidth = Math.max(
+        minRight,
+        Math.min(window.innerWidth - e.clientX - HANDLE_WIDTH / 2, maxRight),
+      );
+      setRightWidth(newWidth);
+      prevRightWidthRef.current = newWidth; // Update recorded width on drag
+    },
+    [leftWidth, activeActivity?.type],
+  );
 
   const handleRightMouseUp = useCallback(() => {
     setIsDraggingRight(false);
@@ -120,7 +199,6 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
     };
   }, [isDraggingRight, handleRightMouseMove, handleRightMouseUp]);
 
-  const toggleLeftSidebar = () => setIsLeftExpanded(!isLeftExpanded);
   const toggleRightSidebar = () => setIsRightExpanded(!isRightExpanded);
 
   // Skip rendering until mounted to avoid hydration issues
@@ -135,12 +213,18 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
             isLeftExpanded ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          <div className="h-full w-80 shadow-2xl">
-            <LeftSidebar
-              isMobile
-              onToggle={() => setIsLeftExpanded(false)}
-              notebookId={notebookId}
-            />
+          <div
+            className="h-full shadow-2xl shrink-0"
+            style={{ width: leftWidth }}
+          >
+            {isLeftExpanded ? (
+              <LeftSidebar
+                notebookId={notebookId}
+                onToggle={toggleLeftSidebar}
+              />
+            ) : (
+              <></>
+            )}
           </div>
         </div>
 
@@ -170,9 +254,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
         <div className="flex-1 w-full h-full overflow-hidden">
           <ChatPanel
             notebookId={notebookId}
-            onOpenLeft={
-              !isLeftExpanded ? () => setIsLeftExpanded(true) : undefined
-            }
+            onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}
           />
         </div>
       </div>
@@ -182,9 +264,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
   return (
     <div className="flex-1 flex overflow-hidden w-full h-full bg-bg-main relative">
       {/* Fixed Collapsed Left Strip */}
-      {!isLeftExpanded && (
-        <CollapsedLeftSidebar onExpand={() => setIsLeftExpanded(true)} />
-      )}
+      {!isLeftExpanded && <CollapsedLeftSidebar onExpand={toggleLeftSidebar} />}
 
       {/* Expanded Left Sidebar + Handle */}
       <div
@@ -237,7 +317,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
         }}
         className="h-full relative overflow-hidden shrink-0 flex-col"
       >
-        <RightSidebar isExpanded={true} onToggle={toggleRightSidebar} isPanel />
+        <RightSidebar isExpanded={true} onToggle={toggleRightSidebar} />
         {isDraggingRight && (
           <div className="absolute inset-0 z-50 pointer-events-auto cursor-col-resize" />
         )}
