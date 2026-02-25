@@ -110,7 +110,9 @@ pub async fn stream_prompt_to_sse(
                 )) => {
                     has_content = true;
                     full_response.push_str(&text.text);
-                    let _ = tx.send(Ok(Event::default().data(&text.text))).await;
+                    let _ = tx
+                        .send(Ok(Event::default().event("answer").data(&text.text)))
+                        .await;
                 }
                 Ok(MultiTurnStreamItem::FinalResponse(_)) => break,
                 Err(e) => {

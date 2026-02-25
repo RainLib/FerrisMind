@@ -101,6 +101,12 @@ pub struct SessionRecord {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+/// Count result from SurrealDB GROUP BY queries
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+pub struct CountRow {
+    pub total: i64,
+}
+
 /// Message record from SurrealDB
 #[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
 pub struct MessageRecord {
@@ -114,7 +120,7 @@ pub struct MessageRecord {
 
 // ─── GraphQL Output Types ───
 
-fn thing_to_string(thing: &Option<RecordId>) -> String {
+pub fn thing_to_string(thing: &Option<RecordId>) -> String {
     thing.as_ref().map(|t| t.to_sql()).unwrap_or_default()
 }
 
@@ -327,6 +333,16 @@ impl From<MessageRecord> for Message {
             created_at: r.created_at,
         }
     }
+}
+
+#[derive(SimpleObject, Debug, Clone)]
+pub struct ChatHistoryPage {
+    pub session_id: String,
+    pub messages: Vec<Message>,
+    pub total: i64,
+    pub offset: i64,
+    pub limit: i64,
+    pub has_more: bool,
 }
 
 #[derive(SimpleObject, Debug, Clone)]

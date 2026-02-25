@@ -90,8 +90,14 @@ impl QueryRoot {
         Ok(records.into_iter().map(Document::from).collect())
     }
 
-    /// List chat sessions in a notebook (with access check).
-    async fn sessions(&self, ctx: &Context<'_>, notebook_id: String) -> Result<Vec<Session>> {
+    /// List chat sessions in a notebook (with access check and pagination).
+    async fn sessions(
+        &self,
+        ctx: &Context<'_>,
+        notebook_id: String,
+        #[graphql(default = 20)] limit: i64,
+        #[graphql(default = 0)] offset: i64,
+    ) -> Result<Vec<Session>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
         let notebook_id = decode_record_id(&notebook_id);
@@ -101,9 +107,17 @@ impl QueryRoot {
             .map_err(|e| e.extend())?;
 
         let records: Vec<SessionRecord> = db
-            .query("SELECT * FROM session WHERE notebook = type::record($notebook_id) AND user = type::record($user_id) ORDER BY updated_at DESC")
+            .query(
+                "SELECT * FROM session \
+                 WHERE notebook = type::record($notebook_id) \
+                   AND user = type::record($user_id) \
+                 ORDER BY updated_at DESC \
+                 LIMIT $limit START $offset",
+            )
             .bind(("notebook_id", notebook_id.clone()))
             .bind(("user_id", claims.sub.clone()))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -112,17 +126,17 @@ impl QueryRoot {
         Ok(records.into_iter().map(Session::from).collect())
     }
 
-    /// List messages in a session.
+    /// List messages in a session (with offset pagination).
     async fn messages(
         &self,
         ctx: &Context<'_>,
         session_id: String,
         #[graphql(default = 50)] limit: i64,
+        #[graphql(default = 0)] offset: i64,
     ) -> Result<Vec<Message>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
 
-        // Verify session belongs to user
         let session_id = decode_record_id(&session_id);
 
         let session: Option<SessionRecord> = db
@@ -139,15 +153,113 @@ impl QueryRoot {
         }
 
         let records: Vec<MessageRecord> = db
-            .query("SELECT * FROM message WHERE session = type::record($session_id) ORDER BY created_at ASC LIMIT $limit")
+            .query(
+                "SELECT * FROM message \
+                 WHERE session = type::record($session_id) \
+                 ORDER BY created_at ASC \
+                 LIMIT $limit START $offset",
+            )
             .bind(("session_id", session_id.clone()))
             .bind(("limit", limit))
+            .bind(("offset", offset))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
         Ok(records.into_iter().map(Message::from).collect())
+    }
+
+    /// Get chat history for a notebook's most recent session (with offset pagination).
+    /// Automatically resolves the latest session for the user+notebook pair.
+    /// Returns paginated messages along with total count.
+    async fn notebook_chat_history(
+        &self,
+        ctx: &Context<'_>,
+        notebook_id: String,
+        #[graphql(default = 50)] limit: i64,
+        #[graphql(default = 0)] offset: i64,
+    ) -> Result<ChatHistoryPage> {
+        let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
+
+        check_notebook_access(db, &claims.sub, &notebook_id)
+            .await
+            .map_err(|e| e.extend())?;
+
+        // Find most recent session
+        let sessions: Vec<SessionRecord> = db
+            .query(
+                "SELECT * FROM session \
+                 WHERE notebook = type::record($notebook_id) \
+                   AND user = type::record($user_id) \
+                 ORDER BY updated_at DESC LIMIT 1",
+            )
+            .bind(("notebook_id", notebook_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let session = match sessions.first() {
+            Some(s) => s,
+            None => {
+                return Ok(ChatHistoryPage {
+                    session_id: String::new(),
+                    messages: vec![],
+                    total: 0,
+                    offset,
+                    limit,
+                    has_more: false,
+                });
+            }
+        };
+
+        let session_id = thing_to_string(&session.id);
+
+        // Total count
+        let count_result: Option<CountRow> = db
+            .query(
+                "SELECT count() AS total FROM message \
+                 WHERE session = type::record($session_id) GROUP ALL",
+            )
+            .bind(("session_id", session_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let total = count_result.map(|c| c.total).unwrap_or(0);
+
+        // Paginated messages
+        let records: Vec<MessageRecord> = db
+            .query(
+                "SELECT * FROM message \
+                 WHERE session = type::record($session_id) \
+                 ORDER BY created_at ASC \
+                 LIMIT $limit START $offset",
+            )
+            .bind(("session_id", session_id.clone()))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let messages: Vec<Message> = records.into_iter().map(Message::from).collect();
+        let has_more = (offset + limit) < total;
+
+        Ok(ChatHistoryPage {
+            session_id,
+            messages,
+            total,
+            offset,
+            limit,
+            has_more,
+        })
     }
 
     // ─── Document Content & Upload Status ───

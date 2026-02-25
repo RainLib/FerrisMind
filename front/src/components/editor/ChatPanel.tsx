@@ -136,6 +136,14 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
           } catch {
             /* ignore */
           }
+        } else if (eventType === "answer") {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId
+                ? { ...msg, content: msg.content + dataStr }
+                : msg,
+            ),
+          );
         } else if (eventType === "error") {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -155,14 +163,6 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiMsgId ? { ...msg, isStreaming: false } : msg,
-            ),
-          );
-        } else {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === aiMsgId
-                ? { ...msg, content: msg.content + dataStr }
-                : msg,
             ),
           );
         }

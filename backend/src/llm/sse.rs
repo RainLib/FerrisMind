@@ -54,13 +54,14 @@ pub async fn chat_stream_handler(
     );
 
     // Persist user message
-    let _ = db
+    if let Err(e) = db
         .query(
             "CREATE message SET \
              session = type::record($session_id), \
              role = 'user', \
              content = $content, \
-             metadata = $metadata",
+             metadata = $metadata, \
+             created_at = time::now()",
         )
         .bind(("session_id", session_id.clone()))
         .bind(("content", input.content.clone()))
@@ -71,13 +72,19 @@ pub async fn chat_stream_handler(
                 "source_ids": input.source_ids,
             }),
         ))
-        .await;
+        .await
+    {
+        tracing::error!("Failed to persist user message: {}", e);
+    }
 
     // Update session timestamp
-    let _ = db
+    if let Err(e) = db
         .query("UPDATE type::record($sid) SET updated_at = time::now()")
         .bind(("sid", session_id.clone()))
-        .await;
+        .await
+    {
+        tracing::error!("Failed to update session timestamp: {}", e);
+    }
 
     let flow_data = ChatFlowData {
         user_id,
@@ -111,18 +118,22 @@ pub async fn chat_stream_handler(
                     "search_hit_count": result.search_results.len(),
                 });
 
-                let _ = db_for_save
+                if let Err(e) = db_for_save
                     .query(
                         "CREATE message SET \
                          session = type::record($session_id), \
                          role = 'assistant', \
                          content = $content, \
-                         metadata = $metadata",
+                         metadata = $metadata, \
+                         created_at = time::now()",
                     )
                     .bind(("session_id", save_session_id))
                     .bind(("content", result.response.clone()))
                     .bind(("metadata", metadata))
-                    .await;
+                    .await
+                {
+                    tracing::error!("Failed to persist assistant message: {}", e);
+                }
 
                 let _ = tx
                     .send(Ok(Event::default()
