@@ -4,8 +4,10 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graph::context::ChatFlowData;
 use crate::graph::router::ChatRouter;
+use crate::graph::suggest;
 use crate::graphql::types::SessionRecord;
 use crate::llm::manager::LlmManager;
+use std::time::Duration;
 use axum::{
     extract::Extension,
     response::sse::{Event, KeepAlive, Sse},
@@ -111,6 +113,15 @@ pub async fn chat_stream_handler(
         ..Default::default()
     };
 
+    // Start suggestion generation in parallel (only needs user question; no wait for answer)
+    let (suggestion_tx, suggestion_rx) = tokio::sync::oneshot::channel();
+    let llm_sug = llm.clone();
+    let question_sug = input.content.clone();
+    tokio::spawn(async move {
+        let q = suggest::generate_suggestions_parallel(llm_sug, question_sug).await;
+        let _ = suggestion_tx.send(q);
+    });
+
     let router = ChatRouter::new(db.clone(), llm, ingest_config);
     let db_for_save = db.clone();
     let save_session_id = session_id.clone();
@@ -128,11 +139,18 @@ pub async fn chat_stream_handler(
     tokio::spawn(async move {
         match router.handle_message(flow_data, &tx).await {
             Ok(result) => {
+                // Use parallel suggestion result (wait up to 8s if not ready yet)
+                let suggested = tokio::time::timeout(Duration::from_secs(8), suggestion_rx)
+                    .await
+                    .unwrap_or(Ok(Vec::new()))
+                    .unwrap_or_default();
+
                 let response_text = result.response.clone();
                 tracing::info!(
-                    "Graph completed: intent={}, response_len={}",
+                    "Graph completed: intent={}, response_len={}, suggestions={}",
                     result.intent,
-                    response_text.len()
+                    response_text.len(),
+                    suggested.len()
                 );
 
                 if response_text.is_empty() {
@@ -144,7 +162,7 @@ pub async fn chat_stream_handler(
                         "source_ids": result.source_ids,
                         "search_query_count": result.search_strategy.as_ref().map(|s| s.searches.len()).unwrap_or(0),
                         "search_hit_count": result.search_results.len(),
-                        "suggested_questions": result.suggested_questions,
+                        "suggested_questions": suggested,
                     });
 
                     match db_for_save
@@ -192,13 +210,13 @@ pub async fn chat_stream_handler(
                     tracing::error!("Failed to update session timestamp after reply: {}", e);
                 }
 
-                // Send suggested follow-up questions
-                if !result.suggested_questions.is_empty() {
+                // Send suggested follow-up questions (from parallel task)
+                if !suggested.is_empty() {
                     let _ = tx
                         .send(Ok(Event::default()
                             .event("suggestions")
                             .data(
-                                serde_json::to_string(&result.suggested_questions)
+                                serde_json::to_string(&suggested)
                                     .unwrap_or_default(),
                             )))
                         .await;

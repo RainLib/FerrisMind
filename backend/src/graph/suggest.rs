@@ -6,6 +6,54 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{info, warn};
 
+/// Generate 3 suggested follow-up questions from the user's question only.
+/// Designed to run in parallel with the main answer flow (no dependency on answer).
+pub async fn generate_suggestions_parallel(
+    llm: Arc<LlmManager>,
+    question: String,
+) -> Vec<String> {
+    if question.trim().is_empty() {
+        return Vec::new();
+    }
+    let mut vars = HashMap::new();
+    vars.insert("question".to_string(), question);
+    let prompt_text = match llm.prompt().render("suggest/from_question", &vars) {
+        Ok(p) => p,
+        Err(e) => {
+            warn!("Failed to render suggest/from_question: {}", e);
+            return Vec::new();
+        }
+    };
+    let agent = llm.agent();
+    match agent
+        .prompt_with_retry(&prompt_text, "SuggestQuestions parallel")
+        .await
+    {
+        Ok(raw) => {
+            let trimmed = raw
+                .trim()
+                .trim_start_matches("```json")
+                .trim_end_matches("```")
+                .trim();
+            match serde_json::from_str::<Vec<String>>(trimmed) {
+                Ok(questions) => {
+                    let q: Vec<String> = questions.into_iter().take(3).collect();
+                    info!("generate_suggestions_parallel: {} suggestions", q.len());
+                    q
+                }
+                Err(e) => {
+                    warn!("Parse suggestion JSON failed: {}, raw: {}", e, &trimmed[..trimmed.len().min(150)]);
+                    Vec::new()
+                }
+            }
+        }
+        Err(e) => {
+            warn!("SuggestQuestions parallel LLM failed: {}", e);
+            Vec::new()
+        }
+    }
+}
+
 pub struct SuggestQuestionsTask {
     pub llm: Arc<LlmManager>,
     pub tx: StageSender,

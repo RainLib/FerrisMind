@@ -1,6 +1,5 @@
 use crate::db::Db;
 use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, SearchHit, StageSender};
-use crate::graph::suggest::SuggestQuestionsTask;
 use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
@@ -319,9 +318,11 @@ impl Task for ChatResponseTask {
         data.response = response;
         ctx.set("data", data).await;
 
+        emit_stage(&self.tx, "complete", "Done", 100).await;
+
         Ok(TaskResult::new(
             Some("Chat response generated".to_string()),
-            NextAction::ContinueAndExecute,
+            NextAction::End,
         ))
     }
 }
@@ -359,13 +360,8 @@ impl ChatGraphRunner {
                     llm: self.llm.clone(),
                     tx: tx.clone(),
                 }))
-                .add_task(Arc::new(SuggestQuestionsTask {
-                    llm: self.llm.clone(),
-                    tx: tx.clone(),
-                }))
                 .add_edge("ChatContextTask", "ChatSearchTask")
                 .add_edge("ChatSearchTask", "ChatResponseTask")
-                .add_edge("ChatResponseTask", "SuggestQuestionsTask")
                 .set_start_task("ChatContextTask")
                 .build(),
         );
