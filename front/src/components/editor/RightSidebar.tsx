@@ -423,7 +423,7 @@ export function RightSidebar({
         {isExpanded ? (
           <button
             onClick={handleAddNote}
-            className="pointer-events-auto bg-primary text-bg-main border border-border-bold px-6 py-3 shadow-[4px_4px_0px_0px_#f59e0b] hover:shadow-[6px_6px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all flex items-center gap-2 font-black text-sm uppercase tracking-wide"
+            className="pointer-events-auto bg-primary text-bg-main border border-border-bold px-6 py-3 shadow-hard hover:shadow-hard-hover hover:-translate-y-0.5 transition-all flex items-center gap-2 font-black text-sm uppercase tracking-wide"
           >
             <span className="material-symbols-outlined icon-sm">note_add</span>
             New Note
@@ -431,7 +431,7 @@ export function RightSidebar({
         ) : (
           <button
             onClick={handleAddNote}
-            className="pointer-events-auto bg-primary text-bg-main border border-border-bold w-10 h-10 shadow-[2px_2px_0px_0px_#f59e0b] flex items-center justify-center hover:shadow-[4px_4px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all"
+            className="pointer-events-auto bg-primary text-bg-main border border-border-bold w-10 h-10 shadow-hard-sm flex items-center justify-center hover:shadow-hard hover:-translate-y-0.5 transition-all"
           >
             <span className="material-symbols-outlined icon-sm">note_add</span>
           </button>

@@ -405,10 +405,10 @@ Through a specific movie recommendation project case, the documents demonstrate 
                     <div className="flex justify-start w-full">
                       <div className="w-full flex flex-col gap-2 relative mt-4">
                         <div
-                          className={`w-full border p-4 sm:p-8 shadow-hard relative ${
+                          className={`w-full border p-4 sm:p-8 shadow-hard relative transition-all ${
                             msg.metadata?.error
-                              ? "bg-red-500/10 border-red-500"
-                              : "bg-bg-main border-border-bold"
+                              ? "bg-red-500/10 border-red-500 shadow-[4px_4px_0px_0px_rgba(239,68,68,0.3)]"
+                              : "bg-bg-paper border-border-bold"
                           }`}
                         >
                           <div
@@ -420,7 +420,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                           >
                             {msg.metadata?.error ? "Error" : "AI Response"}
                             {msg.metadata?.intent && !msg.metadata?.error && (
-                              <span className="text-[9px] bg-bg-main/20 px-1 rounded-sm">
+                              <span className="text-[9px] bg-bg-main/30 px-1.5 py-0.5 rounded-sm border border-bg-main/20">
                                 {msg.metadata.intent}
                               </span>
                             )}
@@ -428,7 +428,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                           {msg.stages &&
                             msg.stages.length > 0 &&
                             msg.isStreaming && (
-                              <div className="mb-4 text-xs font-mono text-gray-500 bg-bg-sources border border-dotted border-border-light p-2 overflow-hidden truncate">
+                              <div className="mb-4 text-xs font-mono text-gray-500 bg-bg-sources border border-dashed border-border-light p-3 rounded-sm overflow-hidden truncate">
                                 <span className="material-symbols-outlined text-[14px] align-middle mr-1 animate-spin">
                                   progress_activity
                                 </span>
