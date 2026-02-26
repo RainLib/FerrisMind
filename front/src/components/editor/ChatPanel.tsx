@@ -270,14 +270,14 @@ Through a specific movie recommendation project case, the documents demonstrate 
   `.trim();
 
   return (
-    <section className="flex-1 flex flex-col bg-bg-main relative w-full h-full">
-      <div className="h-14 px-4 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-white/95 backdrop-blur-sm shrink-0">
+    <section className="flex-1 flex flex-col bg-bg-main relative w-full h-full overflow-hidden">
+      <div className="h-14 px-4 border-b border-border-bold flex items-center justify-between z-10 sticky top-0 bg-bg-main/95 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2 md:gap-3">
           <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest hidden sm:block">
             Chat
           </h2>
           {selectedIds.size > 0 && (
-            <div className="px-2 py-0.5 bg-accent-light text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm whitespace-nowrap">
+            <div className="px-2 py-0.5 bg-accent-light/20 text-accent-secondary text-[10px] font-bold border border-accent-main rounded-sm whitespace-nowrap">
               {selectedIds.size} source{selectedIds.size === 1 ? "" : "s"}{" "}
               active
             </div>
@@ -295,20 +295,20 @@ Through a specific movie recommendation project case, the documents demonstrate 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-16 pt-8 pb-40">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-16 pt-8 pb-40 scrollbar-thin">
         {hasSources ? (
           <div className="max-w-5xl mx-auto space-y-12">
             {messages.length === 0 && (
               <>
                 {/* Summary Section */}
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-gray-200 pb-6 gap-4">
-                    <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight uppercase leading-none">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-border-light pb-6 gap-4">
+                    <h1 className="text-3xl sm:text-4xl font-black text-primary tracking-tight uppercase leading-none">
                       Agentic AI Overview
                     </h1>
                     <div className="flex gap-2 self-start sm:self-auto">
                       <button
-                        className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
+                        className="p-1.5 hover:bg-primary hover:text-bg-main transition-colors border border-transparent hover:border-border-bold text-gray-400"
                         title="Copy"
                       >
                         <span className="material-symbols-outlined icon-sm">
@@ -316,7 +316,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                         </span>
                       </button>
                       <button
-                        className="p-1.5 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black text-gray-400"
+                        className="p-1.5 hover:bg-primary hover:text-bg-main transition-colors border border-transparent hover:border-border-bold text-gray-400"
                         title="Save"
                       >
                         <span className="material-symbols-outlined icon-sm">
@@ -329,10 +329,10 @@ Through a specific movie recommendation project case, the documents demonstrate 
                   <MarkdownRenderer content={markdownContent} />
 
                   <div className="flex flex-wrap gap-3 pt-4">
-                    <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
+                    <button className="px-4 py-2 bg-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-primary">
                       Suggest related topics
                     </button>
-                    <button className="px-4 py-2 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-gray-700">
+                    <button className="px-4 py-2 bg-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 transition-all text-xs font-bold uppercase tracking-wider text-primary">
                       Draft summary
                     </button>
                   </div>
@@ -343,12 +343,12 @@ Through a specific movie recommendation project case, the documents demonstrate 
                     onClick={() =>
                       handleSend("How to use AWS to build Agentic AI?")
                     }
-                    className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30"
+                    className="text-left p-5 bg-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/10"
                   >
                     <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
                       Beginner&apos;s Guide
                     </span>
-                    <span className="block text-sm font-bold text-black">
+                    <span className="block text-sm font-bold text-primary">
                       How to use AWS to build Agentic AI?
                     </span>
                   </button>
@@ -356,12 +356,12 @@ Through a specific movie recommendation project case, the documents demonstrate 
                     onClick={() =>
                       handleSend("LangGraph vs LlamaIndex pros & cons.")
                     }
-                    className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/30"
+                    className="text-left p-5 bg-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all group hover:bg-accent-light/10"
                   >
                     <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
                       Comparison
                     </span>
-                    <span className="block text-sm font-bold text-black">
+                    <span className="block text-sm font-bold text-primary">
                       LangGraph vs LlamaIndex pros &amp; cons.
                     </span>
                   </button>
@@ -371,19 +371,19 @@ Through a specific movie recommendation project case, the documents demonstrate 
                         "Ensuring AI agent safety & performance in production?",
                       )
                     }
-                    className="text-left p-5 bg-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all md:col-span-2 group hover:bg-accent-light/30"
+                    className="text-left p-5 bg-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-1 transition-all md:col-span-2 group hover:bg-accent-light/10"
                   >
                     <span className="block font-bold text-accent-secondary mb-2 text-[10px] uppercase tracking-widest">
                       Best Practices
                     </span>
-                    <span className="block text-sm font-bold text-black">
+                    <span className="block text-sm font-bold text-primary">
                       Ensuring AI agent safety &amp; performance in production?
                     </span>
                   </button>
                 </div>
 
                 <div className="flex justify-center py-4">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white px-3 py-1">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-bg-main px-3 py-1">
                     Today, 2:34 PM
                   </span>
                 </div>
@@ -395,7 +395,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                 <div key={msg.id} className="w-full">
                   {msg.role === "user" ? (
                     <div className="flex justify-end w-full">
-                      <div className="bg-gray-100 text-black px-4 sm:px-6 py-4 border border-black shadow-hard-sm max-w-full">
+                      <div className="bg-bg-sources text-primary px-4 sm:px-6 py-4 border border-border-bold shadow-hard-sm max-w-full">
                         <p className="text-sm font-medium whitespace-pre-wrap">
                           {msg.content}
                         </p>
@@ -407,20 +407,20 @@ Through a specific movie recommendation project case, the documents demonstrate 
                         <div
                           className={`w-full border p-4 sm:p-8 shadow-hard relative ${
                             msg.metadata?.error
-                              ? "bg-red-50 border-red-400"
-                              : "bg-white border-black"
+                              ? "bg-red-500/10 border-red-500"
+                              : "bg-bg-main border-border-bold"
                           }`}
                         >
                           <div
-                            className={`absolute -top-3 -left-3 border px-3 py-1 text-xs font-bold uppercase text-white shadow-sm flex items-center gap-2 ${
+                            className={`absolute -top-3 -left-3 border px-3 py-1 text-xs font-bold uppercase text-bg-main shadow-sm flex items-center gap-2 ${
                               msg.metadata?.error
                                 ? "bg-red-500 border-red-600"
-                                : "bg-accent-main border-black"
+                                : "bg-accent-main border-border-bold"
                             }`}
                           >
                             {msg.metadata?.error ? "Error" : "AI Response"}
                             {msg.metadata?.intent && !msg.metadata?.error && (
-                              <span className="text-[9px] bg-black/20 px-1 rounded-sm">
+                              <span className="text-[9px] bg-bg-main/20 px-1 rounded-sm">
                                 {msg.metadata.intent}
                               </span>
                             )}
@@ -428,7 +428,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                           {msg.stages &&
                             msg.stages.length > 0 &&
                             msg.isStreaming && (
-                              <div className="mb-4 text-xs font-mono text-gray-500 bg-gray-50 border border-dotted border-gray-300 p-2 overflow-hidden truncate">
+                              <div className="mb-4 text-xs font-mono text-gray-500 bg-bg-sources border border-dotted border-border-light p-2 overflow-hidden truncate">
                                 <span className="material-symbols-outlined text-[14px] align-middle mr-1 animate-spin">
                                   progress_activity
                                 </span>
@@ -438,7 +438,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                             )}
                           <MarkdownRenderer content={msg.content} />
                           {msg.isStreaming && (
-                            <span className="inline-block w-2 h-4 bg-black/50 animate-pulse ml-1 align-middle" />
+                            <span className="inline-block w-2 h-4 bg-primary/50 animate-pulse ml-1 align-middle" />
                           )}
                         </div>
 
@@ -447,7 +447,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                           <div className="flex items-center gap-1 text-gray-500 px-2 py-1 select-none">
                             <button
                               onClick={() => handleAction("save", msg.id)}
-                              className="px-3 py-1.5 hover:bg-black hover:text-white transition-colors flex items-center gap-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-transparent hover:border-black"
+                              className="px-3 py-1.5 hover:bg-primary hover:text-bg-main transition-colors flex items-center gap-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-transparent hover:border-border-bold"
                               title="Save to Note"
                             >
                               <span className="material-symbols-outlined text-[16px]">
@@ -457,7 +457,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                             </button>
                             <button
                               onClick={() => handleCopy(msg.content)}
-                              className="p-1.5 hover:bg-black hover:text-white transition-colors rounded-full border border-transparent hover:border-black"
+                              className="p-1.5 hover:bg-primary hover:text-bg-main transition-colors rounded-full border border-transparent hover:border-border-bold"
                               title="Copy"
                             >
                               <span className="material-symbols-outlined text-[16px]">
@@ -466,7 +466,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                             </button>
                             <button
                               onClick={() => handleAction("like", msg.id)}
-                              className="p-1.5 hover:bg-black hover:text-white transition-colors rounded-full border border-transparent hover:border-black ml-1"
+                              className="p-1.5 hover:bg-primary hover:text-bg-main transition-colors rounded-full border border-transparent hover:border-border-bold ml-1"
                               title="Good Response"
                             >
                               <span className="material-symbols-outlined text-[16px]">
@@ -475,7 +475,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                             </button>
                             <button
                               onClick={() => handleAction("dislike", msg.id)}
-                              className="p-1.5 hover:bg-black hover:text-white transition-colors rounded-full border border-transparent hover:border-black"
+                              className="p-1.5 hover:bg-primary hover:text-bg-main transition-colors rounded-full border border-transparent hover:border-border-bold"
                               title="Poor Response"
                             >
                               <span className="material-symbols-outlined text-[16px]">
@@ -495,7 +495,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                                 <button
                                   key={i}
                                   onClick={() => handleSuggestionClick(q)}
-                                  className="text-left px-3 py-2 bg-white border border-gray-200 hover:border-black hover:shadow-hard-sm hover:-translate-y-0.5 transition-all text-xs font-medium text-gray-600 hover:text-black rounded-sm max-w-full"
+                                  className="text-left px-3 py-2 bg-bg-main border border-border-light hover:border-border-bold hover:shadow-hard-sm hover:-translate-y-0.5 transition-all text-xs font-medium text-gray-500 hover:text-primary rounded-sm max-w-full"
                                 >
                                   <span className="material-symbols-outlined text-[14px] align-middle mr-1.5 text-accent-secondary">
                                     arrow_forward
@@ -515,13 +515,13 @@ Through a specific movie recommendation project case, the documents demonstrate 
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center max-w-md mx-auto pt-[15vh]">
-            <div className="w-16 h-16 bg-gray-50 border border-dashed border-gray-300 rounded-full flex items-center justify-center mb-6 shadow-sm relative">
+            <div className="w-16 h-16 bg-bg-sources border border-dashed border-border-light rounded-full flex items-center justify-center mb-6 shadow-sm relative">
               <span className="material-symbols-outlined text-gray-400 text-3xl">
                 chat
               </span>
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
             </div>
-            <h3 className="text-xl font-black text-black tracking-tight uppercase mb-3 text-shadow-sm">
+            <h3 className="text-xl font-black text-primary tracking-tight uppercase mb-3 text-shadow-sm">
               Your AI Assistant is Ready
             </h3>
             <p className="text-sm font-medium text-gray-500 leading-relaxed mb-8">
@@ -533,9 +533,9 @@ Through a specific movie recommendation project case, the documents demonstrate 
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-linear-to-t from-white via-white/80 to-transparent pt-12">
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-linear-to-t from-bg-main via-bg-main/80 to-transparent pt-12">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white border border-black shadow-hard hover:shadow-hard-hover transition-all flex flex-col relative z-20">
+          <div className="bg-bg-main border border-border-bold shadow-hard hover:shadow-hard-hover transition-all flex flex-col relative z-20 group">
             <textarea
               ref={textareaRef}
               value={inputValue}
@@ -546,7 +546,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                 el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
               }}
               onKeyDown={handleKeyDown}
-              className={`w-full bg-transparent border-none text-black placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 ${hasSources ? "py-3" : "py-2"} resize-none outline-none overflow-y-auto`}
+              className={`w-full bg-transparent border-none text-primary placeholder-gray-400 focus:ring-0 text-sm font-medium px-4 ${hasSources ? "py-3" : "py-2"} resize-none outline-none overflow-y-auto`}
               style={{
                 minHeight: hasSources ? "56px" : "40px",
                 maxHeight: "200px",
@@ -566,7 +566,7 @@ Through a specific movie recommendation project case, the documents demonstrate 
                 </Button>
               </div>
               <button
-                className="p-2 bg-accent-main border border-black text-white hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                className="p-2 bg-accent-main border border-border-bold text-bg-main hover:bg-accent-secondary hover:shadow-hard-sm transition-all active:translate-y-0.5 rounded-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                 disabled={!inputValue.trim() || isSending}
                 onClick={() => handleSend()}
               >

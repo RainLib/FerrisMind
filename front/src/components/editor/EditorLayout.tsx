@@ -23,8 +23,8 @@ function ResizeHandle({
   return (
     <div
       onMouseDown={onMouseDown}
-      className={`h-full w-px bg-border-bold flex flex-col items-center justify-center transition-colors cursor-col-resize z-50 relative shrink-0 hover:bg-black group ${
-        isDragging ? "bg-black" : ""
+      className={`h-full w-px bg-border-bold flex flex-col items-center justify-center transition-colors cursor-col-resize z-50 relative shrink-0 hover:bg-primary group ${
+        isDragging ? "bg-primary" : ""
       }`}
     >
       {/* Invisible wider hit area */}
@@ -32,7 +32,7 @@ function ResizeHandle({
       {/* Visual pill */}
       <div
         className={`absolute h-8 w-1 rounded-full transition-colors z-20 ${
-          isDragging ? "bg-black" : "bg-transparent group-hover:bg-black"
+          isDragging ? "bg-primary" : "bg-transparent group-hover:bg-primary"
         }`}
       />
     </div>
@@ -202,12 +202,12 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
   const toggleRightSidebar = () => setIsRightExpanded(!isRightExpanded);
 
   // Skip rendering until mounted to avoid hydration issues
-  if (!mounted) return <div className="flex-1 w-full h-full bg-stone-50" />;
+  if (!mounted) return <div className="flex-1 w-full h-full bg-bg-main" />;
 
   // Mobile drawer rendering
   if (isMobile) {
     return (
-      <div className="flex-1 flex overflow-hidden relative w-full h-full bg-stone-50">
+      <div className="flex-1 flex overflow-hidden relative w-full h-full bg-bg-main">
         <div
           className={`absolute inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out ${
             isLeftExpanded ? "translate-x-0" : "-translate-x-full"
@@ -290,7 +290,7 @@ export function EditorLayout({ notebookId }: { notebookId: string }) {
       </div>
 
       {/* Main Center Panel */}
-      <div className="flex-1 min-w-0 h-full relative overflow-hidden bg-white">
+      <div className="flex-1 min-w-0 h-full relative overflow-hidden bg-bg-main">
         <ChatPanel
           notebookId={notebookId}
           onOpenLeft={!isLeftExpanded ? toggleLeftSidebar : undefined}

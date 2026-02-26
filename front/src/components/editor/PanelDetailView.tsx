@@ -21,15 +21,15 @@ export function PanelDetailView({
   return (
     <div
       className={cn(
-        "absolute inset-0 bg-white z-50 flex flex-col border-l border-border-bold transform transition-transform animate-in slide-in-from-right-full duration-300 ease-out",
+        "absolute inset-0 bg-bg-main z-50 flex flex-col border-l border-border-bold transform transition-transform animate-in slide-in-from-right-full duration-300 ease-out",
         className,
       )}
     >
-      <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold shrink-0 bg-gray-50/50">
+      <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold shrink-0 bg-bg-studio">
         <div className="flex items-center gap-2 overflow-hidden flex-1">
           <button
             onClick={onBack}
-            className="flex items-center justify-center p-1.5 -ml-1.5 text-gray-500 hover:text-black hover:bg-gray-200 rounded-sm transition-colors shrink-0"
+            className="flex items-center justify-center p-1.5 -ml-1.5 text-gray-500 hover:text-primary hover:bg-bg-sources rounded-sm transition-colors shrink-0 border border-transparent hover:border-border-light"
             title="Back"
           >
             <span className="material-symbols-outlined icon-sm">
@@ -43,7 +43,7 @@ export function PanelDetailView({
                 {icon}
               </span>
             )}
-            <h2 className="text-xs font-bold text-gray-700 uppercase tracking-widest truncate">
+            <h2 className="text-xs font-bold text-primary uppercase tracking-widest truncate">
               {title}
             </h2>
           </div>

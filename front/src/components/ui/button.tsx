@@ -14,15 +14,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           "inline-flex items-center justify-center rounded-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:translate-y-0 active:shadow-none",
           {
-            "bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 hover:bg-accent-secondary":
+            "bg-accent-main text-white border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 hover:bg-accent-secondary":
               variant === "primary",
-            "bg-black text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 hover:bg-gray-900":
+            "bg-primary text-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 opacity-90 hover:opacity-100":
               variant === "secondary",
-            "bg-transparent text-gray-700 border border-gray-300 hover:border-black hover:text-black":
+            "bg-transparent text-primary border border-border-light hover:border-border-bold hover:bg-bg-sources":
               variant === "outline",
-            "bg-transparent text-gray-600 border border-transparent hover:bg-gray-50 hover:border-black hover:text-black":
+            "bg-transparent text-gray-500 border border-transparent hover:bg-bg-sources hover:border-border-bold hover:text-primary":
               variant === "ghost",
-            "p-2 text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black rounded-sm":
+            "p-2 text-gray-500 hover:bg-primary hover:text-bg-main border border-transparent hover:border-border-bold rounded-sm":
               variant === "icon",
             "h-10 py-2 px-4": size === "default",
             "h-9 px-3 text-xs": size === "sm",

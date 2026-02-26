@@ -8,8 +8,8 @@ import {
 import {
   $getSelection,
   $isRangeSelection,
-  FORMAT_TEXT_COMMAND,
   LexicalEditor,
+  TextNode,
 } from "lexical";
 import { $setBlocksType } from "@lexical/selection";
 import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text";
@@ -111,9 +111,9 @@ export function ComponentPickerPlugin() {
   const onSelectOption = useCallback(
     (
       selectedOption: ComponentPickerOption,
-      nodeToRemove: any,
+      nodeToRemove: TextNode | null,
       closeMenu: () => void,
-      matchingString: string,
+      _matchingString: string,
     ) => {
       editor.update(() => {
         if (nodeToRemove) {
@@ -139,8 +139,8 @@ export function ComponentPickerPlugin() {
         if (!anchorElementRef.current || options.length === 0) return null;
 
         return createPortal(
-          <div className="bg-white border border-border-main rounded shadow-lg overflow-hidden w-64 absolute z-50 flex flex-col">
-            <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-border-main bg-stone-50 shrink-0">
+          <div className="bg-bg-main border border-border-bold rounded shadow-lg overflow-hidden w-64 absolute z-50 flex flex-col">
+            <div className="px-3 py-2 text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-border-light bg-bg-sources shrink-0">
               Basic Blocks
             </div>
             <ul className="max-h-64 overflow-y-auto">
@@ -150,8 +150,8 @@ export function ComponentPickerPlugin() {
                   tabIndex={-1}
                   className={`flex items-center gap-3 px-3 py-2 cursor-pointer text-sm font-medium transition-colors ${
                     selectedIndex === i
-                      ? "bg-gray-100/80 text-black border-l-2 border-l-black"
-                      : "text-gray-700 hover:bg-stone-50 hover:text-black border-l-2 border-l-transparent"
+                      ? "bg-bg-sources text-primary border-l-2 border-l-primary"
+                      : "text-gray-500 hover:bg-bg-sources hover:text-primary border-l-2 border-l-transparent"
                   }`}
                   ref={(element) => {
                     if (element && selectedIndex === i) {

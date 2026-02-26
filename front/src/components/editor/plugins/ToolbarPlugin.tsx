@@ -44,11 +44,11 @@ export function ToolbarPlugin() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 bg-stone-50 border-b border-border-main sticky top-0 z-10 shrink-0">
+    <div className="flex flex-wrap items-center gap-1 p-2 bg-bg-main border-b border-border-bold sticky top-0 z-10 shrink-0">
       <button
         type="button"
         onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
-        className="p-1.5 hover:bg-gray-200 text-gray-500 rounded-sm"
+        className="p-1.5 hover:bg-bg-sources text-gray-500 rounded-sm hover:text-primary transition-colors"
         title="Undo"
       >
         <span className="material-symbols-outlined icon-sm">undo</span>
@@ -56,17 +56,17 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
-        className="p-1.5 hover:bg-gray-200 text-gray-500 rounded-sm mr-2"
+        className="p-1.5 hover:bg-bg-sources text-gray-500 rounded-sm mr-2 hover:text-primary transition-colors"
         title="Redo"
       >
         <span className="material-symbols-outlined icon-sm">redo</span>
       </button>
-      <div className="w-px h-4 bg-gray-300 mx-1" />
+      <div className="w-px h-4 bg-border-light mx-1" />
 
       <button
         type="button"
         onClick={() => formatHeading("h1")}
-        className="px-2 py-1 text-xs font-bold hover:bg-gray-200 text-gray-700 rounded-sm"
+        className="px-2 py-1 text-xs font-bold hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm transition-colors"
         title="Heading 1"
       >
         H1
@@ -74,7 +74,7 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => formatHeading("h2")}
-        className="px-2 py-1 text-xs font-bold hover:bg-gray-200 text-gray-700 rounded-sm"
+        className="px-2 py-1 text-xs font-bold hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm transition-colors"
         title="Heading 2"
       >
         H2
@@ -82,18 +82,18 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => formatHeading("h3")}
-        className="px-2 py-1 text-xs font-bold hover:bg-gray-200 text-gray-700 rounded-sm"
+        className="px-2 py-1 text-xs font-bold hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm transition-colors"
         title="Heading 3"
       >
         H3
       </button>
 
-      <div className="w-px h-4 bg-gray-300 mx-1" />
+      <div className="w-px h-4 bg-border-light mx-1" />
 
       <button
         type="button"
         onClick={() => handleFormat("bold")}
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm font-bold"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm font-bold transition-colors"
         title="Bold"
       >
         <span className="material-symbols-outlined icon-sm">format_bold</span>
@@ -101,7 +101,7 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => handleFormat("italic")}
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm italic"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm italic transition-colors"
         title="Italic"
       >
         <span className="material-symbols-outlined icon-sm">format_italic</span>
@@ -109,7 +109,7 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => handleFormat("underline")}
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm underline"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm underline transition-colors"
         title="Underline"
       >
         <span className="material-symbols-outlined icon-sm">
@@ -119,20 +119,20 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={() => handleFormat("code")}
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm font-mono text-xs"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm font-mono text-xs transition-colors"
         title="Code"
       >
         <span className="material-symbols-outlined icon-sm">code</span>
       </button>
 
-      <div className="w-px h-4 bg-gray-300 mx-1" />
+      <div className="w-px h-4 bg-border-light mx-1" />
 
       <button
         type="button"
         onClick={() =>
           editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)
         }
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm transition-colors"
         title="Bullet List"
       >
         <span className="material-symbols-outlined icon-sm">
@@ -144,7 +144,7 @@ export function ToolbarPlugin() {
         onClick={() =>
           editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)
         }
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm transition-colors"
         title="Numbered List"
       >
         <span className="material-symbols-outlined icon-sm">
@@ -154,7 +154,7 @@ export function ToolbarPlugin() {
       <button
         type="button"
         onClick={formatQuote}
-        className="p-1.5 hover:bg-gray-200 text-gray-700 rounded-sm"
+        className="p-1.5 hover:bg-bg-sources text-gray-700 hover:text-primary rounded-sm transition-colors"
         title="Quote block"
       >
         <span className="material-symbols-outlined icon-sm">format_quote</span>

@@ -72,16 +72,16 @@ function SourceItem({
 
   return (
     <div
-      className={`group flex items-center gap-3 p-3 bg-white shadow-sm transition-all ${
+      className={`group flex items-center gap-3 p-3 bg-bg-main shadow-sm transition-all ${
         isReady ? "cursor-pointer" : ""
       } ${
         selected
-          ? "border-l-2 border-l-accent-main border-y border-r border-gray-200 hover:border-black"
+          ? "border-l-2 border-l-accent-main border-y border-r border-border-light hover:border-border-bold"
           : isFailed
-            ? "border border-red-200 bg-red-50/30"
+            ? "border border-red-500/30 bg-red-500/5"
             : isUploading
-              ? "border border-gray-200 opacity-70"
-              : "border border-gray-200 hover:border-black"
+              ? "border border-border-light opacity-70"
+              : "border border-border-light hover:border-border-bold"
       }`}
       onClick={() => {
         if (isReady) onItemClick(source.id);
@@ -92,9 +92,9 @@ function SourceItem({
           selected
             ? "bg-accent-light text-accent-secondary"
             : isFailed
-              ? "bg-red-100 text-red-500"
-              : "bg-gray-50 text-gray-400 " +
-                (isReady ? "group-hover:text-black transition-colors" : "")
+              ? "bg-red-100/50 text-red-500"
+              : "bg-bg-sources text-gray-400 " +
+                (isReady ? "group-hover:text-primary transition-colors" : "")
         }`}
       >
         {isUploading ? (
@@ -128,9 +128,11 @@ function SourceItem({
               selected
                 ? "font-bold"
                 : isFailed
-                  ? "font-semibold text-red-700"
-                  : "font-semibold text-gray-700 " +
-                    (isReady ? "group-hover:text-black" : "")
+                  ? "font-semibold text-red-500"
+                  : "font-semibold text-gray-500 " +
+                    (isReady
+                      ? "group-hover:text-primary transition-colors"
+                      : "")
             }`}
             onDoubleClick={(e) => {
               if (isReady) {
@@ -164,10 +166,10 @@ function SourceItem({
         {isReady && (
           <button
             onClick={() => setIsEditing(true)}
-            className="p-1 text-gray-400 hover:text-black transition-colors relative group/btn"
+            className="p-1 text-gray-400 hover:text-primary transition-colors relative group/btn"
           >
             <span className="material-symbols-outlined text-[16px]">edit</span>
-            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover/btn:block">
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-primary text-bg-main text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-border-bold hidden group-hover/btn:block">
               Rename
             </div>
           </button>
@@ -180,7 +182,7 @@ function SourceItem({
             <span className="material-symbols-outlined text-[16px]">
               refresh
             </span>
-            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover/btn:block">
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-bg-main text-primary text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-border-bold hidden group-hover/btn:block">
               Retry
             </div>
           </button>
@@ -190,7 +192,7 @@ function SourceItem({
           className="p-1 text-gray-400 hover:text-red-600 transition-colors relative group/btn"
         >
           <span className="material-symbols-outlined text-[16px]">delete</span>
-          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover/btn:block">
+          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-primary text-bg-main text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-border-bold hidden group-hover/btn:block">
             Delete
           </div>
         </button>
@@ -209,7 +211,7 @@ function SourceItem({
             className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors ${
               selected
                 ? "bg-accent-main border-accent-main text-white"
-                : "border-gray-300 bg-white group-hover:border-black"
+                : "border-border-light bg-bg-main group-hover:border-border-bold"
             }`}
           >
             {selected && (
@@ -575,9 +577,9 @@ export function LeftSidebar({
         {/* Restored Add Sources Button */}
         <button
           onClick={() => setIsAddSourceModalOpen(true)}
-          className="w-full py-3 px-4 bg-white border border-dashed border-black shadow-sm hover:shadow-md hover:border-solid hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 text-sm font-bold group text-gray-600 hover:text-black"
+          className="w-full py-3 px-4 bg-bg-main border border-dashed border-border-bold shadow-sm hover:shadow-md hover:border-solid hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all flex items-center justify-center gap-2 text-sm font-bold group text-gray-600 hover:text-primary"
         >
-          <span className="material-symbols-outlined icon-sm text-accent-main group-hover:text-black transition-colors">
+          <span className="material-symbols-outlined icon-sm text-accent-main group-hover:text-primary transition-colors">
             add
           </span>
           Add source
@@ -585,20 +587,20 @@ export function LeftSidebar({
 
         {/* Large Multi-line Search Input */}
         <div className="relative group p-1 -m-1">
-          <div className="w-full bg-bg-sources border border-black rounded-lg hover:shadow-hard transition-all flex flex-col pt-3 pb-2 px-3 overflow-hidden">
+          <div className="w-full bg-bg-sources border border-border-bold rounded-lg hover:shadow-hard-hover transition-all flex flex-col pt-3 pb-2 px-3 overflow-hidden">
             <div className="flex items-start gap-2 px-1 pb-3">
               <span className="material-symbols-outlined text-gray-500 icon-md mt-0.5">
                 search
               </span>
               <textarea
-                className="flex-1 bg-transparent border-none p-0 text-sm font-medium placeholder-gray-400 focus:ring-0 outline-none text-black resize-none"
+                className="flex-1 bg-transparent border-none p-0 text-sm font-medium placeholder-gray-400 focus:ring-0 outline-none text-primary resize-none"
                 placeholder="Search the web for new sources"
                 rows={2}
               />
             </div>
             {/* Optional dropdowns inside the search bar */}
             <div className="flex gap-2 items-center px-1">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-transparent hover:border-black rounded-full text-xs font-bold text-gray-700 transition-colors">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sources hover:bg-bg-main border border-border-light hover:border-border-bold rounded-full text-xs font-bold text-gray-500 hover:text-primary transition-colors">
                 <span className="material-symbols-outlined text-[14px]">
                   language
                 </span>
@@ -607,7 +609,7 @@ export function LeftSidebar({
                   expand_more
                 </span>
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-transparent hover:border-black rounded-full text-xs font-bold text-gray-700 transition-colors">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sources hover:bg-bg-main border border-border-light hover:border-border-bold rounded-full text-xs font-bold text-gray-500 hover:text-primary transition-colors">
                 <span className="material-symbols-outlined text-[14px]">
                   troubleshoot
                 </span>
@@ -617,7 +619,7 @@ export function LeftSidebar({
                 </span>
               </button>
               <div className="flex-1"></div>
-              <button className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-black hover:text-white transition-colors border border-transparent hover:border-black">
+              <button className="w-7 h-7 flex items-center justify-center rounded-full bg-bg-sources hover:bg-primary hover:text-bg-main transition-colors border border-transparent hover:border-border-bold">
                 <span className="material-symbols-outlined text-[16px]">
                   arrow_forward
                 </span>
@@ -628,11 +630,11 @@ export function LeftSidebar({
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-2">
         {sources.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center relative border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-sm">
-            <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-white px-1 border border-gray-200">
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center relative border-2 border-dashed border-border-light bg-bg-sources rounded-sm">
+            <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-bg-main px-1 border border-border-light">
               [EMPTY]
             </div>
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-200 mb-4 shadow-sm">
+            <div className="w-12 h-12 bg-bg-main rounded-full flex items-center justify-center border border-border-light mb-4 shadow-sm">
               <span className="material-symbols-outlined text-gray-400 icon-lg">
                 upload_file
               </span>
@@ -642,13 +644,13 @@ export function LeftSidebar({
             </h3>
             <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-[200px] mx-auto">
               Please click the{" "}
-              <strong className="text-gray-700">Add source</strong> button above
+              <strong className="text-primary">Add source</strong> button above
               to upload documents or web links.
             </p>
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-2 px-3 py-1 bg-gray-50">
+            <div className="flex items-center justify-between mb-2 px-3 py-1 bg-bg-sources">
               <span className="text-xs font-semibold text-gray-600">
                 Select all sources
               </span>
@@ -656,8 +658,8 @@ export function LeftSidebar({
                 onClick={handleSelectAll}
                 className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-colors cursor-pointer mr-0.5 ${
                   isAllSelected
-                    ? "bg-black border-black text-white"
-                    : "border-gray-400 bg-white hover:border-black"
+                    ? "bg-primary border-border-bold text-bg-main"
+                    : "border-border-light bg-bg-main hover:border-border-bold"
                 }`}
               >
                 {isAllSelected && (
@@ -711,7 +713,7 @@ export function LeftSidebar({
                   <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">
                     Summary
                   </h3>
-                  <div className="text-sm text-gray-800 leading-relaxed font-medium whitespace-pre-wrap">
+                  <div className="text-sm text-primary leading-relaxed font-medium whitespace-pre-wrap">
                     {documentContent?.summary ? (
                       documentContent.summary
                     ) : activeSource.rawStatus === "completed" ? (
@@ -763,7 +765,7 @@ export function LeftSidebar({
                       ).map((topic, i) => (
                         <span
                           key={i}
-                          className="px-3 py-1.5 bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 hover:border-black hover:text-black cursor-pointer transition-colors shadow-sm"
+                          className="px-3 py-1.5 bg-bg-sources border border-border-light text-xs font-bold text-gray-500 hover:border-border-bold hover:text-primary cursor-pointer transition-colors shadow-sm"
                         >
                           {topic.replace(/[^a-zA-Z]/g, "")}
                         </span>
@@ -784,7 +786,7 @@ export function LeftSidebar({
                 Suggested actions
               </h3>
               <div className="flex flex-col gap-2">
-                <button className="text-left px-4 py-3 bg-white border border-gray-200 hover:border-black shadow-sm hover:shadow-hard-sm transition-all text-sm font-bold text-gray-800 group flex items-center justify-between">
+                <button className="text-left px-4 py-3 bg-bg-main border border-border-light hover:border-border-bold shadow-sm hover:shadow-hard-sm transition-all text-sm font-bold text-primary group flex items-center justify-between">
                   <span>Help me understand this document</span>
                   <span className="material-symbols-outlined icon-sm text-gray-400 group-hover:text-black transition-colors">
                     arrow_forward

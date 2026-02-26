@@ -161,12 +161,12 @@ export default function Home() {
 
   return (
     <>
-      <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-6 bg-white z-20 relative">
+      <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-6 bg-bg-main z-20 relative">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 flex items-center justify-center">
-            <Logo className="w-8 h-8 text-black" />
+            <Logo className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="font-bold text-lg tracking-tight uppercase">
+          <h1 className="font-bold text-lg tracking-tight uppercase text-primary">
             Neo Workspace
           </h1>
         </div>
@@ -176,22 +176,22 @@ export default function Home() {
               search
             </span>
             <input
-              className="bg-gray-50 border border-gray-200 rounded-lg py-1.5 pl-9 pr-4 text-sm focus:border-black focus:ring-0 transition-all w-64 placeholder-gray-400"
+              className="bg-bg-sources border border-border-light rounded-lg py-1.5 pl-9 pr-4 text-sm focus:border-border-bold focus:ring-0 transition-all w-64 placeholder-gray-400 text-primary"
               placeholder="Search notebooks..."
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 hover:text-black transition-colors">
+          <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-sources text-gray-500 hover:text-primary transition-colors">
             <span className="material-symbols-outlined icon-sm">
               notifications
             </span>
           </button>
-          <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 hover:text-black transition-colors">
+          <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bg-sources text-gray-500 hover:text-primary transition-colors">
             <span className="material-symbols-outlined icon-sm">help</span>
           </button>
-          <div className="w-8 h-8 rounded-full border border-gray-200 overflow-hidden ml-2">
+          <div className="w-8 h-8 rounded-full border border-border-light overflow-hidden ml-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="User Avatar"
@@ -204,7 +204,7 @@ export default function Home() {
       <main className="flex-1 flex flex-col overflow-hidden max-w-7xl mx-auto w-full px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-black tracking-tight mb-1">
+            <h2 className="text-3xl font-bold text-primary tracking-tight mb-1">
               My notebooks
             </h2>
             <p className="text-gray-500 text-sm">
@@ -214,7 +214,7 @@ export default function Home() {
           <button
             onClick={handleCreateNotebook}
             disabled={isCreating}
-            className="flex items-center gap-2 px-5 py-2.5 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-lg font-semibold text-sm cursor-pointer disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-accent-main text-bg-main border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-lg font-semibold text-sm cursor-pointer disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
           >
             <span
               className={`material-symbols-outlined icon-sm ${isCreating ? "animate-spin" : ""}`}
@@ -224,7 +224,7 @@ export default function Home() {
             {isCreating ? "Creating..." : "Create new"}
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-border-light pb-1">
           <div className="flex gap-6">
             {["All", "My notebooks", "Featured", "Shared with me"].map(
               (tab) => (
@@ -233,8 +233,8 @@ export default function Home() {
                   onClick={() => setActiveTab(tab)}
                   className={`pb-3 border-b-2 text-sm transition-colors ${
                     activeTab === tab
-                      ? "border-accent-main text-black font-semibold"
-                      : "border-transparent hover:border-gray-300 text-gray-500 hover:text-black font-medium"
+                      ? "border-accent-main text-primary font-semibold"
+                      : "border-transparent hover:border-border-light text-gray-500 hover:text-primary font-medium"
                   }`}
                 >
                   {tab}
@@ -243,13 +243,13 @@ export default function Home() {
             )}
           </div>
           <div className="flex items-center gap-2 pb-2">
-            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+            <div className="flex bg-bg-sources p-1 rounded-lg border border-border-light">
               <button
                 onClick={() => setViewMode("list")}
                 className={`p-1 rounded transition-all ${
                   viewMode === "list"
-                    ? "bg-white shadow-sm text-black"
-                    : "text-gray-500 hover:text-black"
+                    ? "bg-bg-main shadow-sm text-primary border border-border-light"
+                    : "text-gray-500 hover:text-primary"
                 }`}
               >
                 <span className="material-symbols-outlined icon-sm">
@@ -260,8 +260,8 @@ export default function Home() {
                 onClick={() => setViewMode("grid")}
                 className={`p-1 rounded transition-all ${
                   viewMode === "grid"
-                    ? "bg-white shadow-sm text-black"
-                    : "text-gray-500 hover:text-black"
+                    ? "bg-bg-main shadow-sm text-primary border border-border-light"
+                    : "text-gray-500 hover:text-primary"
                 }`}
               >
                 <span className="material-symbols-outlined icon-sm">
@@ -269,7 +269,7 @@ export default function Home() {
                 </span>
               </button>
             </div>
-            <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:border-black hover:text-black bg-white transition-colors">
+            <button className="flex items-center gap-1 px-3 py-1.5 border border-border-light rounded-lg text-xs font-medium text-gray-600 hover:border-border-bold hover:text-primary bg-bg-main transition-colors">
               <span>Most recent</span>
               <span className="material-symbols-outlined icon-sm text-[16px]">
                 expand_more
@@ -278,28 +278,28 @@ export default function Home() {
           </div>
         </div>
         {viewMode === "list" ? (
-          <div className="flex-1 overflow-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="flex-1 overflow-auto bg-bg-main border border-border-light rounded-xl shadow-sm">
             <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold tracking-wider sticky top-0 z-10">
+              <thead className="bg-bg-sources text-xs uppercase text-gray-500 font-semibold tracking-wider sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-4 border-b border-gray-200 font-medium w-1/2">
+                  <th className="px-6 py-4 border-b border-border-light font-medium w-1/2">
                     Title
                   </th>
-                  <th className="px-6 py-4 border-b border-gray-200 font-medium">
+                  <th className="px-6 py-4 border-b border-border-light font-medium">
                     Sources
                   </th>
-                  <th className="px-6 py-4 border-b border-gray-200 font-medium">
+                  <th className="px-6 py-4 border-b border-border-light font-medium">
                     Created
                   </th>
-                  <th className="px-6 py-4 border-b border-gray-200 font-medium">
+                  <th className="px-6 py-4 border-b border-border-light font-medium">
                     Role
                   </th>
-                  <th className="px-6 py-4 border-b border-gray-200 font-medium text-right">
+                  <th className="px-6 py-4 border-b border-border-light font-medium text-right">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
+              <tbody className="divide-y divide-border-light/50 text-sm">
                 {isLoading ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-20 text-center">
@@ -326,19 +326,19 @@ export default function Home() {
                   filteredNotebooks.map((n) => (
                     <tr
                       key={n.id}
-                      className="group table-row-hover transition-colors cursor-pointer"
+                      className="group hover:bg-bg-sources/50 transition-colors cursor-pointer"
                       onClick={() => router.push(`/notebook/${n.id}`)}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3 w-full h-full">
                           <div
-                            className={`w-8 h-8 rounded ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100`}
+                            className={`w-8 h-8 rounded ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-border-light`}
                           >
                             <span className="material-symbols-outlined icon-sm">
                               {n.icon}
                             </span>
                           </div>
-                          <span className="font-semibold text-gray-900">
+                          <span className="font-semibold text-primary">
                             {n.name}
                           </span>
                         </div>
@@ -350,7 +350,7 @@ export default function Home() {
                         {new Date(n.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-bg-sources text-primary border border-border-light">
                           {n.role}
                         </span>
                       </td>
@@ -362,23 +362,23 @@ export default function Home() {
                               openDropdownId === n.id ? null : n.id,
                             );
                           }}
-                          className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all"
+                          className="text-gray-400 hover:text-primary p-1 rounded hover:bg-bg-sources opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-border-light"
                         >
                           <span className="material-symbols-outlined icon-sm">
                             more_vert
                           </span>
                         </button>
                         {openDropdownId === n.id && (
-                          <div className="absolute right-6 top-10 w-32 bg-white border border-black shadow-hard-sm rounded-lg z-50 py-1 flex flex-col items-start overflow-hidden">
+                          <div className="absolute right-6 top-10 w-32 bg-bg-main border border-border-bold shadow-hard-sm rounded-lg z-50 py-1 flex flex-col items-start overflow-hidden">
                             <button
                               onClick={(e) => openEditModal(n, e)}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-black font-medium"
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-bg-sources transition-colors text-primary font-medium"
                             >
                               Rename
                             </button>
                             <button
                               onClick={(e) => openDeleteModal(n, e)}
-                              className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-700 transition-colors text-red-600 font-medium"
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-red-500/10 hover:text-red-500 transition-colors text-red-600 font-medium"
                             >
                               Delete
                             </button>
@@ -400,11 +400,11 @@ export default function Home() {
               Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-48 bg-gray-50 border border-gray-100 rounded-xl animate-pulse"
+                  className="h-48 bg-bg-sources border border-border-light rounded-xl animate-pulse"
                 />
               ))
             ) : filteredNotebooks.length === 0 ? (
-              <div className="col-span-full h-64 flex flex-col items-center justify-center gap-2 text-gray-400 border-2 border-dashed border-gray-100 rounded-xl">
+              <div className="col-span-full h-64 flex flex-col items-center justify-center gap-2 text-gray-400 border-2 border-dashed border-border-light rounded-xl bg-bg-sources/20">
                 <span className="material-symbols-outlined text-4xl">
                   inbox
                 </span>
@@ -415,11 +415,11 @@ export default function Home() {
                 <Link
                   href={`/notebook/${n.id}`}
                   key={n.id}
-                  className="group p-5 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-hard-sm hover:border-black hover:-translate-y-1 transition-all flex flex-col justify-between"
+                  className="group p-5 bg-bg-main border border-border-light rounded-xl shadow-sm hover:shadow-hard-sm hover:border-border-bold hover:-translate-y-1 transition-all flex flex-col justify-between"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div
-                      className={`w-12 h-12 rounded-lg ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-gray-100 shadow-sm`}
+                      className={`w-12 h-12 rounded-lg ${n.iconBg} ${n.iconColor} flex items-center justify-center border border-border-light shadow-sm bg-bg-sources/30`}
                     >
                       <span className="material-symbols-outlined text-2xl">
                         {n.icon}
@@ -434,23 +434,23 @@ export default function Home() {
                             openDropdownId === n.id ? null : n.id,
                           );
                         }}
-                        className="text-gray-400 hover:text-black p-1 rounded hover:bg-gray-100 transition-colors"
+                        className="text-gray-400 hover:text-primary p-1 rounded hover:bg-bg-sources transition-colors border border-transparent hover:border-border-light"
                       >
                         <span className="material-symbols-outlined icon-sm">
                           more_vert
                         </span>
                       </button>
                       {openDropdownId === n.id && (
-                        <div className="absolute right-0 top-8 w-32 bg-white border border-black shadow-hard-sm rounded-lg z-50 py-1 flex flex-col items-start overflow-hidden">
+                        <div className="absolute right-0 top-8 w-32 bg-bg-main border border-border-bold shadow-hard-sm rounded-lg z-50 py-1 flex flex-col items-start overflow-hidden">
                           <button
                             onClick={(e) => openEditModal(n, e)}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-black font-medium"
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-bg-sources transition-colors text-primary font-medium"
                           >
                             Rename
                           </button>
                           <button
                             onClick={(e) => openDeleteModal(n, e)}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-red-700 transition-colors text-red-600 font-medium"
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-red-500/10 hover:text-red-500 transition-colors text-red-600 font-medium"
                           >
                             Delete
                           </button>
@@ -459,7 +459,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-bold text-black text-lg mb-1">
+                    <h3 className="font-bold text-primary text-lg mb-1">
                       {n.name}
                     </h3>
                     <p className="text-xs text-gray-500 font-mono">
@@ -475,11 +475,11 @@ export default function Home() {
         <div className="mt-4 flex justify-between items-center text-xs text-gray-400">
           <p>Showing {filteredNotebooks.length} notebooks</p>
           <div className="flex gap-2">
-            <button className="hover:text-black transition-colors">
+            <button className="hover:text-primary transition-colors">
               Privacy
             </button>
             <span>•</span>
-            <button className="hover:text-black transition-colors">
+            <button className="hover:text-primary transition-colors">
               Terms
             </button>
           </div>
@@ -488,10 +488,10 @@ export default function Home() {
 
       {/* RENAME MODAL */}
       {editModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white border border-black shadow-modal rounded-xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="font-bold text-lg text-black tracking-tight">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-main/60 backdrop-blur-sm p-4">
+          <div className="bg-bg-main border border-border-bold shadow-modal rounded-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-border-light">
+              <h3 className="font-bold text-lg text-primary tracking-tight">
                 Rename Notebook
               </h3>
             </div>
@@ -504,7 +504,7 @@ export default function Home() {
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors"
+                  className="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:border-border-bold bg-bg-sources text-primary focus:ring-0 transition-colors"
                   placeholder="e.g. Q4 Financial Research"
                   autoFocus
                 />
@@ -516,22 +516,22 @@ export default function Home() {
                 <textarea
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-black focus:ring-0 transition-colors h-24 resize-none"
+                  className="w-full border border-border-light rounded-lg px-3 py-2 text-sm focus:border-border-bold bg-bg-sources text-primary focus:ring-0 transition-colors h-24 resize-none"
                   placeholder="What is this notebook about?"
                 />
               </div>
             </div>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 bg-bg-sources border-t border-border-light flex justify-end gap-3">
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-black"
+                className="px-4 py-2 border border-border-light rounded-lg text-sm font-medium hover:bg-bg-main transition-colors text-primary"
               >
                 Cancel
               </button>
               <button
                 onClick={submitEditNotebook}
                 disabled={!formName.trim()}
-                className="px-4 py-2 border border-black shadow-hard-sm bg-accent-main text-white rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
+                className="px-4 py-2 border border-border-bold shadow-hard-sm bg-accent-main text-bg-main rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-hard-sm"
               >
                 Save Changes
               </button>
@@ -542,10 +542,10 @@ export default function Home() {
 
       {/* DELETE MODAL */}
       {deleteModalOpen && selectedNotebook && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white border border-red-200 shadow-modal rounded-xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-red-50">
-              <h3 className="font-bold text-lg text-red-600 tracking-tight flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-main/60 backdrop-blur-sm p-4">
+          <div className="bg-bg-main border border-red-500 shadow-modal rounded-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-red-500/20 bg-red-500/10">
+              <h3 className="font-bold text-lg text-red-500 tracking-tight flex items-center gap-2">
                 <span className="material-symbols-outlined icon-sm">
                   warning
                 </span>
@@ -553,9 +553,9 @@ export default function Home() {
               </h3>
             </div>
             <div className="p-6">
-              <p className="text-gray-700 text-sm mb-4">
+              <p className="text-gray-500 text-sm mb-4">
                 Are you sure you want to delete{" "}
-                <span className="font-bold text-black border border-gray-200 px-1 py-0.5 rounded bg-gray-50">
+                <span className="font-bold text-primary border border-border-light px-1 py-0.5 rounded bg-bg-sources">
                   {selectedNotebook.name}
                 </span>
                 ?
@@ -565,16 +565,16 @@ export default function Home() {
                 inside this notebook will be immediately removed.
               </p>
             </div>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 bg-bg-sources border-t border-border-light flex justify-end gap-3">
               <button
                 onClick={() => setDeleteModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors text-black"
+                className="px-4 py-2 border border-border-light rounded-lg text-sm font-medium hover:bg-bg-main transition-colors text-primary"
               >
                 Cancel
               </button>
               <button
                 onClick={submitDeleteNotebook}
-                className="px-4 py-2 border border-black shadow-hard-sm bg-red-600 text-white rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard hover:bg-red-700 transition-all"
+                className="px-4 py-2 border border-border-bold shadow-hard-sm bg-red-600 text-bg-main rounded-lg text-sm font-semibold hover:-translate-y-0.5 hover:shadow-hard hover:bg-red-700 transition-all"
               >
                 Yes, Delete It
               </button>

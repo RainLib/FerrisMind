@@ -35,9 +35,6 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
 
   const handleConvertToSource = async () => {
     // Basic logic mapping note content to a File object.
-    const blob = new Blob([content], { type: "text/markdown" });
-    const file = new File([blob], `${title}.md`, { type: "text/markdown" });
-
     // In a full implementation, this should hit POST /api/upload and then insert to sources.
     // For now, we mock the transition by indicating it's processing.
     alert(
@@ -49,12 +46,12 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-white relative">
-      <div className="h-14 px-4 border-b border-border-main flex items-center gap-2 justify-between shrink-0 bg-stone-50">
+    <div className="flex flex-col h-full w-full bg-bg-main relative">
+      <div className="h-14 px-4 border-b border-border-bold flex items-center gap-2 justify-between shrink-0 bg-bg-studio">
         <div className="flex items-center gap-2 text-sm">
           <button
             onClick={() => setActiveActivity(null)}
-            className="text-gray-500 hover:text-black hover:bg-gray-200 px-2 py-1 rounded transition-colors flex items-center gap-1 font-semibold"
+            className="text-gray-500 hover:text-primary hover:bg-bg-sources px-2 py-1 rounded transition-colors flex items-center gap-1 font-semibold border border-transparent hover:border-border-light"
           >
             <span className="material-symbols-outlined icon-sm">
               arrow_back
@@ -64,7 +61,7 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
           <span className="material-symbols-outlined icon-sm text-gray-400">
             chevron_right
           </span>
-          <span className="text-gray-800 font-semibold truncate max-w-[200px]">
+          <span className="text-primary font-semibold truncate max-w-[200px]">
             Note
           </span>
         </div>
@@ -84,7 +81,7 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
           {onToggle && (
             <button
               onClick={onToggle}
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white rounded transition-colors group relative border border-transparent hover:border-black"
+              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-primary hover:text-bg-main rounded transition-colors group relative border border-transparent hover:border-border-bold"
               title="Collapse Sidebar"
             >
               <span className="material-symbols-outlined icon-sm">
@@ -100,7 +97,7 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
           type="text"
           value={title}
           onChange={handleTitleChange}
-          className="text-3xl font-black text-gray-800 border-none outline-none focus:ring-0 bg-transparent mb-6 placeholder-gray-300 w-full"
+          className="text-3xl font-black text-primary border-none outline-none focus:ring-0 bg-transparent mb-6 placeholder-gray-400 w-full"
           placeholder="Note Title..."
         />
         <div className="flex-1 w-full overflow-hidden mb-4 relative z-0">
@@ -111,13 +108,13 @@ export function NoteEditorPanel({ onToggle }: { onToggle?: () => void }) {
         </div>
       </div>
 
-      <div className="h-16 border-t border-border-main flex items-center px-6 shrink-0 bg-stone-50 justify-between">
+      <div className="h-16 border-t border-border-bold flex items-center px-6 shrink-0 bg-bg-studio justify-between">
         <span className="text-xs text-gray-400 font-medium tracking-wide">
           Auto-saved locally
         </span>
         <button
           onClick={handleConvertToSource}
-          className="flex items-center gap-2 px-4 py-2.5 bg-black text-white text-xs font-bold rounded-[2px] shadow-hard-sm hover:shadow-hard transition-all hover:-translate-y-0.5 group"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-bg-main text-xs font-bold rounded-[2px] shadow-hard-sm hover:shadow-hard transition-all hover:-translate-y-0.5 group border border-border-bold"
         >
           <span className="material-symbols-outlined icon-sm group-hover:rotate-12 transition-transform">
             post_add

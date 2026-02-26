@@ -11,6 +11,7 @@ import {
   NotebookInitialData,
 } from "@/lib/graphql";
 import { useNotebookStore, ChatMessage } from "@/store/notebookStore";
+import { SettingsDropdown } from "@/components/editor/SettingsDropdown";
 
 export default function Editor() {
   const params = useParams();
@@ -144,11 +145,11 @@ export default function Editor() {
           }}
         ></div>
         <div className="relative z-10 flex flex-col items-center">
-          <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-white shadow-hard border-2 border-black animate-pulse mb-8 relative">
-            <Logo className="w-12 h-12 text-black" />
-            <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-accent-main border-2 border-black rounded-full animate-bounce"></div>
+          <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-bg-main shadow-hard border-2 border-border-bold animate-pulse mb-8 relative">
+            <Logo className="w-12 h-12 text-primary" />
+            <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-accent-main border-2 border-border-bold rounded-full animate-bounce"></div>
           </div>
-          <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-full border border-black shadow-hard-sm">
+          <div className="flex items-center space-x-2 bg-bg-sources px-4 py-2 rounded-full border border-border-bold shadow-hard-sm">
             <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce leading-none"></div>
             <div
               className="w-2.5 h-2.5 bg-red-500 rounded-full animate-bounce leading-none"
@@ -163,7 +164,7 @@ export default function Editor() {
               style={{ animationDelay: "0.45s" }}
             ></div>
           </div>
-          <h2 className="mt-6 text-sm font-black tracking-widest text-black uppercase">
+          <h2 className="mt-6 text-sm font-black tracking-widest text-primary uppercase">
             Loading Studio
           </h2>
         </div>
@@ -173,12 +174,12 @@ export default function Editor() {
 
   return (
     <>
-      <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-4 sm:px-6 bg-white z-20 relative overflow-hidden">
+      <header className="h-16 shrink-0 border-b border-border-bold flex items-center justify-between px-4 sm:px-6 bg-bg-main z-20 relative overflow-hidden">
         <div
           className="absolute top-0 right-0 bottom-0 w-64 pointer-events-none opacity-10"
           style={{
             backgroundImage:
-              "repeating-linear-gradient(45deg, #171717, #171717 1px, transparent 1px, transparent 6px)",
+              "repeating-linear-gradient(45deg, var(--color-primary), var(--color-primary) 1px, transparent 1px, transparent 6px)",
           }}
         ></div>
         <div className="flex items-center gap-4 relative z-10">
@@ -186,7 +187,7 @@ export default function Editor() {
             href="/"
             className="w-10 h-10 flex items-center justify-center transform transition-transform hover:-translate-y-0.5 group"
           >
-            <Logo className="w-8 h-8 text-black" />
+            <Logo className="w-8 h-8 text-primary" />
           </Link>
           {isEditing ? (
             <input
@@ -196,42 +197,37 @@ export default function Editor() {
               onChange={(e) => setTempTitle(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
-              className="font-bold text-lg sm:text-xl tracking-tight uppercase bg-gray-50 border-b-2 border-black focus:outline-none px-1 py-0.5 min-w-[200px]"
+              className="font-bold text-lg sm:text-xl tracking-tight uppercase bg-bg-sources border-b-2 border-border-bold focus:outline-none px-1 py-0.5 min-w-[200px] text-primary"
             />
           ) : (
             <h1
               onClick={() => setIsEditing(true)}
-              className="font-bold text-lg sm:text-xl tracking-tight uppercase truncate cursor-pointer hover:bg-gray-50 px-1 py-0.5 border-b-2 border-transparent hover:border-gray-200 transition-all"
+              className="font-bold text-lg sm:text-xl tracking-tight uppercase truncate cursor-pointer hover:bg-bg-sources px-1 py-0.5 border-b-2 border-transparent hover:border-border-light transition-all text-primary"
             >
               {title}
             </h1>
           )}
         </div>
         <div className="flex items-center gap-2 sm:gap-3 relative z-10">
-          <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-black shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
+          <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-accent-main text-white border border-border-bold shadow-hard-sm hover:shadow-hard hover:-translate-y-0.5 active:translate-y-0 active:shadow-none transition-all rounded-none font-bold text-sm">
             <span className="material-symbols-outlined icon-sm">add</span>
             Notebook
           </button>
-          <div className="hidden sm:block h-6 w-px bg-gray-300 mx-2"></div>
+          <div className="hidden sm:block h-6 w-px bg-border-light mx-2"></div>
           <button
-            className="w-10 h-10 hidden sm:flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+            className="w-10 h-10 hidden sm:flex items-center justify-center border border-transparent hover:border-border-bold hover:bg-bg-sources transition-all rounded-none text-gray-500 hover:text-primary"
             title="Analytics"
           >
             <span className="material-symbols-outlined icon-sm">analytics</span>
           </button>
           <button
-            className="w-10 h-10 hidden sm:flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
+            className="w-10 h-10 hidden sm:flex items-center justify-center border border-transparent hover:border-border-bold hover:bg-bg-sources transition-all rounded-none text-gray-500 hover:text-primary"
             title="Share"
           >
             <span className="material-symbols-outlined icon-sm">share</span>
           </button>
-          <button
-            className="w-10 h-10 flex items-center justify-center border border-transparent hover:border-black hover:bg-gray-50 transition-all rounded-none text-gray-600 hover:text-black"
-            title="Settings"
-          >
-            <span className="material-symbols-outlined icon-sm">settings</span>
-          </button>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 border border-black overflow-hidden shadow-hard-sm ml-1 sm:ml-2">
+          <SettingsDropdown />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border border-border-bold overflow-hidden shadow-hard-sm ml-1 sm:ml-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="User Avatar"

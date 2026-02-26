@@ -72,7 +72,7 @@ export function RightSidebar({
     return (
       <aside
         className={cn(
-          "flex flex-col h-full bg-white border-l border-border-bold relative w-full",
+          "flex flex-col h-full bg-bg-main border-l border-border-bold relative w-full",
         )}
       >
         {isExpanded ? (
@@ -81,7 +81,7 @@ export function RightSidebar({
           <div className="h-14 px-4 flex items-center justify-between border-b border-border-bold bg-bg-studio shrink-0">
             <button
               onClick={onToggle}
-              className="mx-auto text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all p-1 relative group"
+              className="mx-auto text-gray-500 hover:bg-primary hover:text-bg-main border border-transparent hover:border-border-bold transition-all p-1 relative group"
             >
               <span className="material-symbols-outlined icon-sm">
                 dock_to_left
@@ -108,14 +108,14 @@ export function RightSidebar({
         <button
           onClick={onToggle}
           className={cn(
-            "text-gray-500 hover:bg-black hover:text-white border border-transparent hover:border-black transition-all p-1 relative group",
+            "text-gray-500 hover:bg-primary hover:text-bg-main border border-transparent hover:border-border-bold transition-all p-1 relative group",
             !isExpanded && "mx-auto",
           )}
         >
           <span className="material-symbols-outlined icon-sm">
             {isExpanded ? "dock_to_right" : "dock_to_left"}
           </span>
-          <div className="absolute top-full mt-2 right-0 bg-black text-white text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-black hidden group-hover:block">
+          <div className="absolute top-full mt-2 right-0 bg-primary text-bg-main text-[10px] font-bold px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-sm border border-border-bold hidden group-hover:block">
             {isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
           </div>
         </button>
@@ -123,7 +123,7 @@ export function RightSidebar({
 
       <div
         className={cn(
-          "p-4 border-b border-gray-200 bg-stone-50/50 shrink-0 transition-opacity",
+          "p-4 border-b border-border-light bg-bg-main shrink-0 transition-opacity",
           !isExpanded && "px-2 py-4",
         )}
       >
@@ -138,7 +138,7 @@ export function RightSidebar({
             onClick={() => handleToolClick("audio")}
             disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-orange-50/60 border border-orange-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-orange group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-orange-500/10 border border-orange-500/30 rounded-sm transition-all text-xs font-bold text-primary group overflow-hidden items-center justify-center dark:bg-orange-500/5",
               isExpanded ? "flex-col gap-2" : "",
               hasSources
                 ? "hover:border-orange-500 hover:shadow-md"
@@ -146,15 +146,15 @@ export function RightSidebar({
             )}
             style={{
               backgroundImage:
-                "repeating-linear-gradient(45deg, rgba(249, 115, 22, 0.1) 0, rgba(249, 115, 22, 0.1) 1px, transparent 0, transparent 8px)",
+                "repeating-linear-gradient(45deg, rgba(249, 115, 22, 0.05) 0, rgba(249, 115, 22, 0.05) 1px, transparent 0, transparent 8px)",
             }}
           >
             {isExpanded && (
-              <div className="absolute top-0 right-0 border-b border-l border-orange-200 bg-white px-1 py-0.5 text-[8px] text-orange-400 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-0 right-0 border-b border-l border-orange-500/30 bg-bg-main px-1 py-0.5 text-[8px] text-orange-400 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
                 [AU]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-orange-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-8 h-8 flex items-center justify-center bg-bg-main border border-orange-500/20 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-orange-500">
                 graphic_eq
               </span>
@@ -172,7 +172,7 @@ export function RightSidebar({
             onClick={() => handleToolClick("video")}
             disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-cyan-50/60 border border-cyan-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-blue group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-sm transition-all text-xs font-bold text-primary group overflow-hidden items-center justify-center dark:bg-cyan-500/5",
               isExpanded ? "flex-col gap-2" : "",
               hasSources
                 ? "hover:border-cyan-500 hover:shadow-md"
@@ -180,15 +180,15 @@ export function RightSidebar({
             )}
             style={{
               backgroundImage:
-                "repeating-linear-gradient(45deg, rgba(6, 182, 212, 0.1) 0, rgba(6, 182, 212, 0.1) 1px, transparent 0, transparent 8px)",
+                "repeating-linear-gradient(45deg, rgba(6, 182, 212, 0.05) 0, rgba(6, 182, 212, 0.05) 1px, transparent 0, transparent 8px)",
             }}
           >
             {isExpanded && (
-              <div className="absolute top-0 right-0 border-b border-l border-cyan-200 bg-white px-1 py-0.5 text-[8px] text-cyan-500 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-0 right-0 border-b border-l border-cyan-500/30 bg-bg-main px-1 py-0.5 text-[8px] text-cyan-500 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
                 [VI]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-cyan-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-8 h-8 flex items-center justify-center bg-bg-main border border-cyan-500/20 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-cyan-500">
                 smart_display
               </span>
@@ -206,7 +206,7 @@ export function RightSidebar({
             onClick={() => handleToolClick("brief")}
             disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-emerald-50/60 border border-emerald-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-green group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-sm transition-all text-xs font-bold text-primary group overflow-hidden items-center justify-center dark:bg-emerald-500/5",
               isExpanded ? "flex-col gap-2" : "",
               hasSources
                 ? "hover:border-emerald-600 hover:shadow-md"
@@ -214,15 +214,15 @@ export function RightSidebar({
             )}
             style={{
               backgroundImage:
-                "repeating-linear-gradient(45deg, rgba(16, 185, 129, 0.1) 0, rgba(16, 185, 129, 0.1) 1px, transparent 0, transparent 8px)",
+                "repeating-linear-gradient(45deg, rgba(16, 185, 129, 0.05) 0, rgba(16, 185, 129, 0.05) 1px, transparent 0, transparent 8px)",
             }}
           >
             {isExpanded && (
-              <div className="absolute top-0 right-0 border-b border-l border-emerald-200 bg-white px-1 py-0.5 text-[8px] text-emerald-600 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-0 right-0 border-b border-l border-emerald-500/30 bg-bg-main px-1 py-0.5 text-[8px] text-emerald-600 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
                 [BR]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-emerald-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-8 h-8 flex items-center justify-center bg-bg-main border border-emerald-500/20 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-emerald-600">
                 summarize
               </span>
@@ -240,7 +240,7 @@ export function RightSidebar({
             onClick={() => handleToolClick("cards")}
             disabled={!hasSources}
             className={cn(
-              "relative flex p-3 bg-violet-50/60 border border-violet-200 rounded-sm transition-all text-xs font-bold text-gray-800 hatch-pattern-purple group overflow-hidden items-center justify-center",
+              "relative flex p-3 bg-violet-500/10 border border-violet-500/30 rounded-sm transition-all text-xs font-bold text-primary group overflow-hidden items-center justify-center dark:bg-violet-500/5",
               isExpanded ? "flex-col gap-2" : "",
               hasSources
                 ? "hover:border-violet-600 hover:shadow-md"
@@ -248,15 +248,15 @@ export function RightSidebar({
             )}
             style={{
               backgroundImage:
-                "repeating-linear-gradient(45deg, rgba(139, 92, 246, 0.1) 0, rgba(139, 92, 246, 0.1) 1px, transparent 0, transparent 8px)",
+                "repeating-linear-gradient(45deg, rgba(139, 92, 246, 0.05) 0, rgba(139, 92, 246, 0.05) 1px, transparent 0, transparent 8px)",
             }}
           >
             {isExpanded && (
-              <div className="absolute top-0 right-0 border-b border-l border-violet-200 bg-white px-1 py-0.5 text-[8px] text-violet-600 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-0 right-0 border-b border-l border-violet-500/30 bg-bg-main px-1 py-0.5 text-[8px] text-violet-600 font-mono tracking-tighter opacity-70 group-hover:opacity-100 transition-opacity">
                 [CA]
               </div>
             )}
-            <div className="w-8 h-8 flex items-center justify-center bg-white border border-violet-100 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-8 h-8 flex items-center justify-center bg-bg-main border border-violet-500/20 rounded-full shadow-sm group-hover:scale-105 transition-transform shrink-0">
               <span className="material-symbols-outlined icon-sm text-violet-600">
                 style
               </span>
@@ -283,8 +283,8 @@ export function RightSidebar({
                       className={cn(
                         "w-full text-left p-2 rounded-sm flex items-center justify-between group transition-colors border relative cursor-pointer",
                         activeActivity?.id === activity.id
-                          ? "bg-white border-black shadow-hard-sm"
-                          : "border-transparent hover:border-gray-300 hover:bg-gray-100",
+                          ? "bg-bg-main border-border-bold shadow-hard-sm"
+                          : "border-transparent hover:border-border-light hover:bg-bg-sources",
                       )}
                       onClick={() => {
                         // Prevent click if editing
@@ -311,11 +311,11 @@ export function RightSidebar({
                               onChange={(e) => setEditTitle(e.target.value)}
                               onBlur={() => saveRename(activity.id)}
                               onKeyDown={(e) => handleKeyDown(e, activity.id)}
-                              className="text-xs font-bold text-gray-800 bg-white border border-gray-300 px-1 py-0.5 outline-none rounded"
+                              className="text-xs font-bold text-primary bg-bg-main border border-border-light px-1 py-0.5 outline-none rounded"
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
-                            <span className="text-xs font-bold text-gray-800 truncate">
+                            <span className="text-xs font-bold text-primary truncate">
                               {activity.title}
                             </span>
                           )}
@@ -331,7 +331,7 @@ export function RightSidebar({
                       >
                         <DropdownMenu.Root>
                           <DropdownMenu.Trigger asChild>
-                            <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-black/5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="h-8 w-8 flex items-center justify-center rounded hover:bg-bg-sources text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                               <span className="material-symbols-outlined icon-sm">
                                 more_vert
                               </span>
@@ -340,10 +340,10 @@ export function RightSidebar({
                           <DropdownMenu.Portal>
                             <DropdownMenu.Content
                               align="end"
-                              className="min-w-[120px] bg-white rounded-md p-1 shadow-lg border border-gray-200 z-50 text-xs font-medium"
+                              className="min-w-[120px] bg-bg-main rounded-md p-1 shadow-lg border border-border-bold z-50 text-xs font-medium"
                             >
                               <DropdownMenu.Item
-                                className="flex items-center px-2 py-1.5 outline-none cursor-pointer hover:bg-gray-100 rounded text-gray-700"
+                                className="flex items-center px-2 py-1.5 outline-none cursor-pointer hover:bg-bg-sources rounded text-primary"
                                 onClick={() => {
                                   setEditTitle(activity.title);
                                   setEditingId(activity.id);
@@ -380,16 +380,16 @@ export function RightSidebar({
               </div>
             ) : (
               <div
-                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-sm relative flex flex-col items-center justify-center p-6 text-center"
+                className="w-full h-48 border-2 border-dashed border-border-light rounded-sm relative flex flex-col items-center justify-center p-6 text-center"
                 style={{
                   backgroundImage:
-                    "repeating-linear-gradient(45deg, #e5e5e5 0, #e5e5e5 1px, transparent 0, transparent 10px)",
+                    "repeating-linear-gradient(45deg, var(--border-light) 0, var(--border-light) 1px, transparent 0, transparent 10px)",
                 }}
               >
-                <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-white px-1 border border-gray-200">
+                <div className="absolute top-2 right-2 text-[9px] font-bold text-gray-400 bg-bg-main px-1 border border-border-bold">
                   [ST-EMPTY]
                 </div>
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center border border-gray-200 mb-3 shadow-sm">
+                <div className="w-12 h-12 bg-bg-main rounded-full flex items-center justify-center border border-border-light mb-3 shadow-sm">
                   <span className="material-symbols-outlined text-gray-300 icon-lg">
                     auto_awesome
                   </span>
@@ -407,7 +407,7 @@ export function RightSidebar({
           <div className="flex flex-col items-center gap-4 mt-4 w-full">
             <button
               title="History"
-              className="text-gray-400 hover:text-black hover:bg-gray-100 p-2 rounded-sm transition-colors"
+              className="text-gray-400 hover:text-primary hover:bg-bg-sources p-2 rounded-sm transition-colors border border-transparent hover:border-border-light"
             >
               <span className="material-symbols-outlined">history</span>
             </button>
@@ -423,7 +423,7 @@ export function RightSidebar({
         {isExpanded ? (
           <button
             onClick={handleAddNote}
-            className="pointer-events-auto bg-black text-white border border-black px-6 py-3 shadow-[4px_4px_0px_0px_#f59e0b] hover:shadow-[6px_6px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all flex items-center gap-2 font-black text-sm uppercase tracking-wide"
+            className="pointer-events-auto bg-primary text-bg-main border border-border-bold px-6 py-3 shadow-[4px_4px_0px_0px_#f59e0b] hover:shadow-[6px_6px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all flex items-center gap-2 font-black text-sm uppercase tracking-wide"
           >
             <span className="material-symbols-outlined icon-sm">note_add</span>
             New Note
@@ -431,7 +431,7 @@ export function RightSidebar({
         ) : (
           <button
             onClick={handleAddNote}
-            className="pointer-events-auto bg-black text-white border border-black w-10 h-10 shadow-[2px_2px_0px_0px_#f59e0b] flex items-center justify-center hover:shadow-[4px_4px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all"
+            className="pointer-events-auto bg-primary text-bg-main border border-border-bold w-10 h-10 shadow-[2px_2px_0px_0px_#f59e0b] flex items-center justify-center hover:shadow-[4px_4px_0px_0px_#d97706] hover:-translate-y-0.5 transition-all"
           >
             <span className="material-symbols-outlined icon-sm">note_add</span>
           </button>
@@ -445,8 +445,8 @@ export function RightSidebar({
           onBack={() => setActiveTool(null)}
         >
           <div className="p-5 flex flex-col gap-4">
-            <div className="p-4 bg-orange-50/50 border border-orange-200 rounded-sm">
-              <h3 className="text-sm font-bold text-orange-800 mb-2">
+            <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-sm">
+              <h3 className="text-sm font-bold text-orange-600 mb-2">
                 Voice Generation
               </h3>
               <p className="text-xs text-orange-600/80 mb-4">
@@ -462,14 +462,18 @@ export function RightSidebar({
               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">
                 Options
               </h4>
-              <div className="p-3 bg-white border border-gray-200 shadow-sm flex items-center justify-between">
-                <span className="text-xs font-medium">Voice Clone</span>
-                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 font-bold uppercase">
+              <div className="p-3 bg-bg-main border border-border-light shadow-sm flex items-center justify-between">
+                <span className="text-xs font-medium text-primary">
+                  Voice Clone
+                </span>
+                <span className="text-[10px] bg-bg-sources text-gray-500 px-2 py-0.5 font-bold uppercase border border-border-light transition-colors">
                   Pro
                 </span>
               </div>
-              <div className="p-3 bg-white border border-gray-200 shadow-sm flex items-center justify-between">
-                <span className="text-xs font-medium">Background Music</span>
+              <div className="p-3 bg-bg-main border border-border-light shadow-sm flex items-center justify-between">
+                <span className="text-xs font-medium text-primary">
+                  Background Music
+                </span>
                 <span className="material-symbols-outlined icon-sm text-gray-400">
                   toggle_off
                 </span>
@@ -486,8 +490,8 @@ export function RightSidebar({
           onBack={() => setActiveTool(null)}
         >
           <div className="p-5 flex flex-col gap-4">
-            <div className="p-4 bg-cyan-50/50 border border-cyan-200 rounded-sm">
-              <h3 className="text-sm font-bold text-cyan-800 mb-2">
+            <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-sm">
+              <h3 className="text-sm font-bold text-cyan-500 mb-2">
                 Video Generation
               </h3>
               <p className="text-xs text-cyan-600/80 mb-4">
@@ -509,8 +513,8 @@ export function RightSidebar({
           onBack={() => setActiveTool(null)}
         >
           <div className="p-5 flex flex-col gap-4">
-            <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-sm">
-              <h3 className="text-sm font-bold text-emerald-800 mb-2">
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-sm">
+              <h3 className="text-sm font-bold text-emerald-500 mb-2">
                 Executive Brief
               </h3>
               <p className="text-xs text-emerald-600/80 mb-4">
@@ -532,8 +536,8 @@ export function RightSidebar({
           onBack={() => setActiveTool(null)}
         >
           <div className="p-5 flex flex-col gap-4">
-            <div className="p-4 bg-violet-50/50 border border-violet-200 rounded-sm">
-              <h3 className="text-sm font-bold text-violet-800 mb-2">
+            <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-sm">
+              <h3 className="text-sm font-bold text-violet-500 mb-2">
                 Study Cards
               </h3>
               <p className="text-xs text-violet-600/80 mb-4">

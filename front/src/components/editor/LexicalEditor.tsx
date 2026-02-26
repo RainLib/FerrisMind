@@ -29,33 +29,33 @@ import { ComponentPickerPlugin } from "./plugins/ComponentPickerPlugin";
 
 // Theme
 const theme = {
-  paragraph: "mb-4 text-base",
+  paragraph: "mb-4 text-base text-primary",
   text: {
     bold: "font-bold",
     italic: "italic",
     underline: "underline",
     strikethrough: "line-through",
-    code: "bg-gray-100 rounded px-1.5 py-0.5 font-mono text-sm text-pink-500",
+    code: "bg-bg-sources rounded px-1.5 py-0.5 font-mono text-sm text-accent-secondary",
   },
   heading: {
-    h1: "text-3xl font-black mb-4 mt-6",
-    h2: "text-2xl font-bold mb-3 mt-5",
-    h3: "text-xl font-bold mb-2 mt-4",
-    h4: "text-lg font-bold mb-2 mt-4",
-    h5: "text-base font-bold mb-1 mt-3",
+    h1: "text-3xl font-black mb-4 mt-6 text-primary",
+    h2: "text-2xl font-bold mb-3 mt-5 text-primary",
+    h3: "text-xl font-bold mb-2 mt-4 text-primary",
+    h4: "text-lg font-bold mb-2 mt-4 text-primary",
+    h5: "text-base font-bold mb-1 mt-3 text-primary",
     h6: "text-sm font-bold mb-1 mt-3 text-gray-500 uppercase",
   },
   list: {
-    ul: "list-disc ml-6 mb-4",
-    ol: "list-decimal ml-6 mb-4",
+    ul: "list-disc ml-6 mb-4 text-primary",
+    ol: "list-decimal ml-6 mb-4 text-primary",
     listitem: "mb-1",
     listitemChecked: "line-through text-gray-500",
     listitemUnchecked: "",
   },
   quote:
-    "border-l-4 border-gray-300 pl-4 py-2 italic mb-4 bg-gray-50 text-gray-600 rounded-r",
-  code: "bg-gray-900 text-gray-100 p-4 rounded-md font-mono text-sm block overflow-x-auto mb-4",
-  link: "text-blue-600 hover:text-blue-800 hover:underline cursor-pointer",
+    "border-l-4 border-border-bold pl-4 py-2 italic mb-4 bg-bg-sources text-primary/80 rounded-r",
+  code: "bg-primary text-bg-main p-4 rounded-md font-mono text-sm block overflow-x-auto mb-4",
+  link: "text-accent-secondary hover:text-accent-main hover:underline cursor-pointer",
 };
 
 interface LexicalEditorProps {
@@ -106,18 +106,18 @@ export function LexicalEditor({
 
   return (
     <LexicalComposer initialConfig={customConfig}>
-      <div className="relative h-full w-full flex flex-col font-sans group border border-border-main bg-white">
+      <div className="relative h-full w-full flex flex-col font-sans group border border-border-bold bg-bg-main">
         <ToolbarPlugin />
 
         <div className="flex-1 relative overflow-auto px-4 py-2">
           <RichTextPlugin
             contentEditable={
-              <ContentEditable className="h-full min-h-[500px] outline-none border-none resize-none py-2 text-gray-800 leading-relaxed max-w-none" />
+              <ContentEditable className="h-full min-h-[500px] outline-none border-none resize-none py-2 text-primary leading-relaxed max-w-none" />
             }
             placeholder={
               <div className="absolute top-4 left-4 text-gray-400 pointer-events-none select-none italic text-sm">
-                Start writing your note here... (Markdown & '/' commands
-                supported)
+                Start writing your note here... (Markdown &amp; &apos;/&apos;
+                commands supported)
               </div>
             }
             ErrorBoundary={LexicalErrorBoundary}
