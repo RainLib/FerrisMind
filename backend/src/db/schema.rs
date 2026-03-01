@@ -92,6 +92,29 @@ pub async fn apply_schema(db: &Surreal<Any>) -> anyhow::Result<()> {
         "DEFINE FIELD metadata ON message TYPE option<string>;",
         "DEFINE FIELD created_at ON message TYPE datetime DEFAULT time::now();",
         "DEFINE INDEX idx_msg_session ON message FIELDS session;",
+
+        // ── Knowledge Graph: entity nodes ──
+        "DEFINE TABLE kg_entity SCHEMAFULL;",
+        "DEFINE FIELD notebook    ON kg_entity TYPE record<notebook>;",
+        "DEFINE FIELD document    ON kg_entity TYPE record<document>;",
+        "DEFINE FIELD chunk_id    ON kg_entity TYPE option<record<chunk>>;",
+        "DEFINE FIELD label       ON kg_entity TYPE string;",
+        "DEFINE FIELD entity_type ON kg_entity TYPE string;",
+        "DEFINE FIELD properties  ON kg_entity TYPE option<object> FLEXIBLE;",
+        "DEFINE FIELD is_active   ON kg_entity TYPE bool DEFAULT true;",
+        "DEFINE FIELD created_at  ON kg_entity TYPE datetime DEFAULT time::now();",
+        "DEFINE INDEX idx_kg_entity_notebook ON kg_entity FIELDS notebook;",
+        "DEFINE INDEX idx_kg_entity_document ON kg_entity FIELDS document;",
+        "DEFINE INDEX idx_kg_entity_label    ON kg_entity FIELDS label;",
+
+        // ── Knowledge Graph: directed relation edges (RELATE) ──
+        "DEFINE TABLE kg_relation SCHEMAFULL TYPE RELATION IN kg_entity OUT kg_entity;",
+        "DEFINE FIELD notebook      ON kg_relation TYPE record<notebook>;",
+        "DEFINE FIELD relation_type ON kg_relation TYPE string;",
+        "DEFINE FIELD confidence    ON kg_relation TYPE float;",
+        "DEFINE FIELD chunk_id      ON kg_relation TYPE option<record<chunk>>;",
+        "DEFINE FIELD is_active     ON kg_relation TYPE bool DEFAULT true;",
+        "DEFINE FIELD created_at    ON kg_relation TYPE datetime DEFAULT time::now();",
     ];
 
     for stmt in statements {

@@ -2,6 +2,7 @@ pub mod ask;
 pub mod chat;
 pub mod context;
 pub mod intent;
+pub mod kg_search;
 pub mod router;
 pub mod source;
 pub mod source_chat;

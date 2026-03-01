@@ -419,6 +419,23 @@ impl MutationRoot {
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
+        // Soft-delete KG entities for this document (preserve history, just hide from queries)
+        db.query("UPDATE kg_entity SET is_active = false WHERE document = type::record($doc_id)")
+            .bind(("doc_id", id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        // Soft-delete KG relations that touch any of this document's entities
+        // (SurrealDB RELATE edge table uses `in` and `out` for from/to)
+        db.query(
+            "UPDATE kg_relation SET is_active = false \
+             WHERE in IN (SELECT id FROM kg_entity WHERE document = type::record($doc_id) AND is_active = false) \
+                OR out IN (SELECT id FROM kg_entity WHERE document = type::record($doc_id) AND is_active = false)"
+        )
+            .bind(("doc_id", id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
         db.query("DELETE type::record($id)")
             .bind(("id", id.clone()))
             .await
@@ -457,10 +474,9 @@ impl MutationRoot {
             .map_err(|e| e.extend())?;
 
         if doc.upload_status != "completed" {
-            return Err(AppError::BadRequest(
-                "Document is not yet fully processed".to_string(),
-            )
-            .extend());
+            return Err(
+                AppError::BadRequest("Document is not yet fully processed".to_string()).extend(),
+            );
         }
 
         // Fetch all chunks ordered by index

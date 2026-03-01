@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use bytes::Bytes;
@@ -9,6 +10,7 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::types::DocumentRecord;
 use crate::ingest::chunker::ChunkConfig;
+use crate::ingest::kg_extractor::KgExtractor;
 use crate::ingest::parser::{ExtractedImage, IngestFile, ParserRegistry};
 use crate::ingest::pipeline::{EmbeddedChunk, EmbeddingProvider, IngestPipeline, IngestStreamItem};
 use crate::llm::manager::LlmManager;
@@ -40,19 +42,26 @@ impl EmbeddingProvider for RigEmbeddingProvider {
 pub struct IngestionService {
     db: Db,
     pipeline: Arc<IngestPipeline>,
+    kg_extractor: Arc<KgExtractor>,
 }
 
 impl IngestionService {
     pub fn new(db: Db, llm: Arc<LlmManager>, config: &IngestConfig) -> Self {
         let chunk_config = ChunkConfig::new(config.chunk_size, config.overlap_ratio);
-        let embedder: Arc<dyn EmbeddingProvider> = Arc::new(RigEmbeddingProvider::new(llm));
+        let embedder: Arc<dyn EmbeddingProvider> = Arc::new(RigEmbeddingProvider::new(llm.clone()));
 
         let pipeline = Arc::new(
             IngestPipeline::new(ParserRegistry::with_defaults(), chunk_config, embedder)
                 .with_batch_size(config.embed_batch_size),
         );
 
-        Self { db, pipeline }
+        let kg_extractor = Arc::new(KgExtractor::new(db.clone(), llm));
+
+        Self {
+            db,
+            pipeline,
+            kg_extractor,
+        }
     }
 
     /// Main entry point: read file → compute sha256 → dedup → parse → chunk → embed → store.
@@ -104,10 +113,7 @@ impl IngestionService {
 
         // Check for existing processed document with the same hash
         if let Some(existing) = self.find_duplicate(&sha256, &document_id).await {
-            info!(
-                "Dedup hit — reusing chunks from document {:?}",
-                existing.id
-            );
+            info!("Dedup hit — reusing chunks from document {:?}", existing.id);
             if let Err(e) = self.duplicate_chunks(&doc, &existing).await {
                 error!("Failed to reuse chunks: {}", e);
                 self.mark_status(&document_id, "failed").await;
@@ -129,6 +135,10 @@ impl IngestionService {
         let notebook_id = doc.notebook.to_sql();
         let doc_id_sql = doc.id.as_ref().map(|t| t.to_sql()).unwrap_or_default();
         let mut chunk_count: i64 = 0;
+        // chunk_index → stored SurrealDB chunk record id (for KG entity linking)
+        let mut chunk_id_map: HashMap<usize, String> = HashMap::new();
+        // accumulate full article text
+        let mut full_text = String::new();
 
         let mut stream = self.pipeline.ingest_stream(&ingest_file);
         while let Some(result) = stream.next().await {
@@ -147,13 +157,20 @@ impl IngestionService {
                     );
                 }
                 Ok(IngestStreamItem::Chunk(embedded)) => {
-                    if let Err(e) = self
-                        .store_chunk(&embedded, &doc_id_sql, &notebook_id)
-                        .await
-                    {
-                        warn!("Failed to store chunk {}: {}", embedded.chunk.index, e);
-                    } else {
-                        chunk_count += 1;
+                    let chunk_idx = embedded.chunk.index;
+                    let chunk_content = embedded.chunk.content.clone();
+                    match self.store_chunk(&embedded, &doc_id_sql, &notebook_id).await {
+                        Ok(stored_id) => {
+                            chunk_id_map.insert(chunk_idx, stored_id);
+                            if !full_text.is_empty() {
+                                full_text.push_str("\n\n");
+                            }
+                            full_text.push_str(&chunk_content);
+                            chunk_count += 1;
+                        }
+                        Err(e) => {
+                            warn!("Failed to store chunk {}: {}", chunk_idx, e);
+                        }
                     }
                 }
                 Err(e) => {
@@ -164,12 +181,23 @@ impl IngestionService {
             }
         }
 
+        // ──── KG extraction (full article, token-windowed) ────
+        let kg = self.kg_extractor.clone();
+        let doc_id_for_kg = doc_id_sql.clone();
+        let nb_id_for_kg = notebook_id.clone();
+        tokio::spawn(async move {
+            if let Err(e) = kg
+                .extract_and_store(&doc_id_for_kg, &nb_id_for_kg, &full_text, &chunk_id_map)
+                .await
+            {
+                warn!("KG extraction failed for {}: {}", doc_id_for_kg, e);
+            }
+        });
+
         // Finalize
         if let Err(e) = self
             .db
-            .query(
-                "UPDATE type::record($id) SET chunk_count = $count, upload_status = 'completed'",
-            )
+            .query("UPDATE type::record($id) SET chunk_count = $count, upload_status = 'completed'")
             .bind(("id", document_id.clone()))
             .bind(("count", chunk_count))
             .await
@@ -202,9 +230,9 @@ impl IngestionService {
                     std::path::Path::new(&upload_dir).join(&doc.filename)
                 };
 
-                let data = tokio::fs::read(&path).await.map_err(|e| {
-                    anyhow::anyhow!("Cannot read file '{}': {}", path.display(), e)
-                })?;
+                let data = tokio::fs::read(&path)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Cannot read file '{}': {}", path.display(), e))?;
                 Ok(Bytes::from(data))
             }
             "text" => Ok(Bytes::from(doc.filename.clone().into_bytes())),
@@ -221,17 +249,18 @@ impl IngestionService {
         }
     }
 
-    /// Store a single embedded chunk into the database.
+    /// Store a single embedded chunk into the database, returning the stored record ID.
     async fn store_chunk(
         &self,
         embedded: &EmbeddedChunk,
         document_id: &str,
         notebook_id: &str,
-    ) -> Result<(), AppError> {
+    ) -> Result<String, AppError> {
         let metadata_json =
             serde_json::to_string(&embedded.chunk.metadata).unwrap_or_else(|_| "{}".to_string());
 
-        self.db
+        let mut res = self
+            .db
             .query(
                 "CREATE chunk SET \
                     document = type::record($doc_id), \
@@ -239,7 +268,8 @@ impl IngestionService {
                     content = $content, \
                     chunk_index = $idx, \
                     metadata = $meta, \
-                    embedding = $embedding",
+                    embedding = $embedding \
+                    RETURN id",
             )
             .bind(("doc_id", document_id.to_string()))
             .bind(("nb_id", notebook_id.to_string()))
@@ -250,7 +280,13 @@ impl IngestionService {
             .await
             .map_err(|e| AppError::Database(e.to_string()))?;
 
-        Ok(())
+        let ids: Vec<surrealdb_types::RecordId> = res.take(0).unwrap_or_default();
+        let stored_id = ids
+            .into_iter()
+            .next()
+            .map(|r| r.to_sql())
+            .unwrap_or_default();
+        Ok(stored_id)
     }
 
     /// Store an extracted image: write bytes to disk + create a DB record.

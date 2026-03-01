@@ -14,10 +14,7 @@ pub struct LegacyOfficeParser;
 
 impl DocumentParser for LegacyOfficeParser {
     fn supported_mime_types(&self) -> &[&str] {
-        &[
-            "application/msword",
-            "application/vnd.ms-powerpoint",
-        ]
+        &["application/msword", "application/vnd.ms-powerpoint"]
     }
 
     fn parse(&self, file: &IngestFile) -> anyhow::Result<ParseResult> {
@@ -88,7 +85,9 @@ fn try_soffice_convert(file: &IngestFile) -> anyhow::Result<String> {
 
     std::fs::write(&input_path, &file.data)?;
 
-    let status = std::process::Command::new("soffice")
+    let soffice_bin = find_soffice();
+
+    let status = std::process::Command::new(&soffice_bin)
         .args([
             "--headless",
             "--convert-to",
@@ -98,7 +97,13 @@ fn try_soffice_convert(file: &IngestFile) -> anyhow::Result<String> {
             input_path.to_str().unwrap_or("input.doc"),
         ])
         .output()
-        .map_err(|e| anyhow::anyhow!("soffice (LibreOffice) not available: {}", e))?
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "soffice (LibreOffice) not available at '{}': {}",
+                soffice_bin,
+                e
+            )
+        })?
         .status;
 
     if !status.success() {
@@ -116,4 +121,23 @@ fn try_soffice_convert(file: &IngestFile) -> anyhow::Result<String> {
     let mut text = String::new();
     f.read_to_string(&mut text)?;
     Ok(text)
+}
+
+/// Resolve the absolute path to `soffice`. This is necessary because IDE debuggers
+/// and some process launchers may not inherit the user's full PATH.
+fn find_soffice() -> String {
+    let candidates = [
+        "/usr/local/bin/soffice",
+        "/opt/homebrew/bin/soffice",
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/usr/bin/soffice",
+        "/snap/bin/soffice",
+    ];
+    for path in &candidates {
+        if std::path::Path::new(path).exists() {
+            return path.to_string();
+        }
+    }
+    // fallback: rely on PATH
+    "soffice".to_string()
 }
