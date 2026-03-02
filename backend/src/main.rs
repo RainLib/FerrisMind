@@ -68,6 +68,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Build Axum Router
     let app = Router::new()
+        .route("/", get(|| async { "FerrisMind Backend is running!" }))
         .route("/graphql", post(crate::graphql::graphql_handler))
         .route("/graphiql", get(crate::graphql::graphiql_handler))
         .route(
@@ -79,12 +80,12 @@ async fn main() -> anyhow::Result<()> {
             "/api/upload/url",
             post(crate::api::upload_url::upload_url_handler),
         )
+        .layer(middleware::from_fn(auth_middleware))
         .layer(Extension(schema))
         .layer(Extension(config.jwt.clone()))
         .layer(Extension(config.ingest.clone()))
         .layer(Extension(db.clone()))
         .layer(Extension(llm_manager))
-        .layer(middleware::from_fn(auth_middleware))
         .layer(TraceLayer::new_for_http())
         .layer(cors);
 
