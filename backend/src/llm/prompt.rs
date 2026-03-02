@@ -12,7 +12,17 @@ impl PromptManager {
     /// Create a new PromptManager and load templates from the given directory
     pub fn new<P: AsRef<Path>>(prompts_dir: P) -> Self {
         let path = prompts_dir.as_ref();
-        let glob = format!("{}/**/*", path.to_string_lossy());
+
+        // If the given path doesn't exist, try common fallbacks
+        let resolved = if path.exists() {
+            path.to_path_buf()
+        } else if Path::new("backend").join(path).exists() {
+            Path::new("backend").join(path)
+        } else {
+            path.to_path_buf()
+        };
+
+        let glob = format!("{}/**/*", resolved.to_string_lossy());
 
         // Initialize Tera with the prompts directory
         let mut tera = match Tera::new(&glob) {
