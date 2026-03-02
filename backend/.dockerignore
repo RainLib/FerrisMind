@@ -1,0 +1,10 @@
+target/
+uploads/
+.env
+.env.*
+!.env.example
+build_errors.txt
+*.swp
+*.swo
+.git
+.gitignore

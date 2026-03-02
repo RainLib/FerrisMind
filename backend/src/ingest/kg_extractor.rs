@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use surrealdb_types::ToSql;
+use surrealdb_types::{RecordId, SurrealValue, ToSql};
 use tracing::{debug, info, warn};
 
 use crate::db::Db;
@@ -37,6 +37,12 @@ pub struct KgExtractionResult {
     pub entities: Vec<ExtractedEntity>,
     #[serde(default)]
     pub relations: Vec<ExtractedRelation>,
+}
+
+/// Row returned by CREATE kg_entity — we only need the id.
+#[derive(Debug, Clone, Serialize, Deserialize, SurrealValue)]
+struct CreatedRecord {
+    id: Option<RecordId>,
 }
 
 // ─── KgExtractor ───
@@ -180,11 +186,6 @@ Rules:
     // ─── Main entry point: extract + store ───
 
     /// Extracts KG from the full article text and stores entities/relations in SurrealDB.
-    ///
-    /// - `doc_id`       : e.g. "document:abc123"
-    /// - `notebook_id`  : e.g. "notebook:xyz"
-    /// - `full_text`    : concatenated plain text of the entire document
-    /// - `chunk_id_map` : chunk_index → SurrealDB chunk record id (for linking entities to source chunks)
     pub async fn extract_and_store(
         &self,
         doc_id: &str,
@@ -205,10 +206,8 @@ Rules:
             full_text.len()
         );
 
-        // Pick the most relevant chunk id (first window → first chunk)
         let first_chunk_id = chunk_id_map.get(&0).cloned();
-
-        // label → SurrealDB entity record id (built up per-window, then shared)
+        // label → SurrealDB entity record id string
         let mut entity_id_map: HashMap<String, String> = HashMap::new();
 
         for (win_idx, window) in windows.iter().enumerate() {
@@ -235,49 +234,73 @@ Rules:
                 .cloned()
                 .unwrap_or_default();
 
-            // Upsert entities
+            // ── Store entities ──
             for entity in &result.entities {
                 let label_key = entity.label.to_lowercase();
                 if entity_id_map.contains_key(&label_key) {
-                    continue; // already stored in a prior window
+                    continue;
                 }
 
-                let props_json =
-                    serde_json::to_string(&entity.properties).unwrap_or_else(|_| "{}".to_string());
-                let chunk_opt = if chunk_ref.is_empty() {
-                    "NONE".to_string()
+                let chunk_set = if chunk_ref.is_empty() {
+                    "chunk_id = NONE".to_string()
                 } else {
-                    format!("type::record('{}')", chunk_ref)
+                    format!("chunk_id = type::record('{}')", chunk_ref)
                 };
 
-                let created: Vec<surrealdb_types::RecordId> = self
+                let query = format!(
+                    "CREATE kg_entity SET \
+                        notebook = type::record($nb_id), \
+                        document = type::record($doc_id), \
+                        {chunk_set}, \
+                        label = $label, \
+                        entity_type = $entity_type, \
+                        is_active = true"
+                );
+
+                let mut response = match self
                     .db
-                    .query(format!(
-                        "CREATE kg_entity SET \
-                            notebook = type::record($nb_id), \
-                            document = type::record($doc_id), \
-                            chunk_id = {chunk_opt}, \
-                            label = $label, \
-                            entity_type = $entity_type, \
-                            properties = $props, \
-                            is_active = true"
-                    ))
+                    .query(&query)
                     .bind(("nb_id", notebook_id.to_string()))
                     .bind(("doc_id", doc_id.to_string()))
                     .bind(("label", entity.label.clone()))
                     .bind(("entity_type", entity.entity_type.clone()))
-                    .bind(("props", props_json))
                     .await
-                    .map_err(|e| anyhow::anyhow!("Store kg_entity failed: {}", e))?
-                    .take("id")
-                    .unwrap_or_default();
+                {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!(
+                            "KgExtractor: CREATE kg_entity '{}' DB error: {}",
+                            entity.label, e
+                        );
+                        continue;
+                    }
+                };
 
-                if let Some(rid) = created.into_iter().next() {
-                    entity_id_map.insert(label_key, rid.to_sql());
+                // SurrealDB CREATE returns the full record at statement index 0
+                let rows: Vec<CreatedRecord> = match response.take(0) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        warn!(
+                            "KgExtractor: CREATE kg_entity '{}' deserialize failed: {}",
+                            entity.label, e
+                        );
+                        continue;
+                    }
+                };
+
+                if let Some(row) = rows.into_iter().next() {
+                    let id_str = row.id.as_ref().map(|r| r.to_sql()).unwrap_or_default();
+                    debug!("KgExtractor: stored entity '{}' → {}", entity.label, id_str);
+                    entity_id_map.insert(label_key, id_str);
+                } else {
+                    warn!(
+                        "KgExtractor: CREATE kg_entity '{}' returned empty result",
+                        entity.label
+                    );
                 }
             }
 
-            // Upsert relations via RELATE
+            // ── Store relations via RELATE ──
             for rel in &result.relations {
                 let from_key = rel.from_label.to_lowercase();
                 let to_key = rel.to_label.to_lowercase();
@@ -292,22 +315,24 @@ Rules:
                     continue;
                 };
 
-                let chunk_opt = if chunk_ref.is_empty() {
-                    "NONE".to_string()
+                let chunk_set = if chunk_ref.is_empty() {
+                    "chunk_id = NONE".to_string()
                 } else {
-                    format!("type::record('{}')", chunk_ref)
+                    format!("chunk_id = type::record('{}')", chunk_ref)
                 };
+
+                let relate_query = format!(
+                    "RELATE type::record($from_id)->kg_relation->type::record($to_id) \
+                     SET notebook = type::record($nb_id), \
+                         relation_type = $rel_type, \
+                         confidence = $confidence, \
+                         {chunk_set}, \
+                         is_active = true"
+                );
 
                 if let Err(e) = self
                     .db
-                    .query(format!(
-                        "RELATE type::record($from_id)->kg_relation->type::record($to_id) \
-                         SET notebook = type::record($nb_id), \
-                             relation_type = $rel_type, \
-                             confidence = $confidence, \
-                             chunk_id = {chunk_opt}, \
-                             is_active = true"
-                    ))
+                    .query(&relate_query)
                     .bind(("from_id", from_id.clone()))
                     .bind(("to_id", to_id.clone()))
                     .bind(("nb_id", notebook_id.to_string()))
@@ -315,7 +340,10 @@ Rules:
                     .bind(("confidence", rel.confidence))
                     .await
                 {
-                    warn!("KgExtractor: RELATE failed: {}", e);
+                    warn!(
+                        "KgExtractor: RELATE '{}'->'{}' failed: {}",
+                        rel.from_label, rel.to_label, e
+                    );
                 }
             }
 
