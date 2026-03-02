@@ -272,10 +272,13 @@ export function LeftSidebar({
       formData.append("notebook_id", notebookId);
       files.forEach((file) => formData.append("files", file));
 
-      const response = await fetch("http://localhost:8080/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api/upload`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
 
       if (!response.ok) throw new Error("Upload failed");
 
@@ -327,16 +330,19 @@ export function LeftSidebar({
     setSources((prev) => [...tempSources, ...prev]);
 
     try {
-      const response = await fetch("http://localhost:8080/api/upload/url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api/upload/url`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notebook_id: notebookId,
+            urls,
+          }),
         },
-        body: JSON.stringify({
-          notebook_id: notebookId,
-          urls,
-        }),
-      });
+      );
 
       if (!response.ok) throw new Error("Upload failed");
 

@@ -86,18 +86,21 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/api/chat/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"}/api/chat/stream`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notebook_id: notebookId,
+            content: userMsg.content,
+            session_id: sessionId,
+            source_ids: Array.from(selectedIds),
+          }),
         },
-        body: JSON.stringify({
-          notebook_id: notebookId,
-          content: userMsg.content,
-          session_id: sessionId,
-          source_ids: Array.from(selectedIds),
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error("Failed to send message");

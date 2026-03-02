@@ -1,4 +1,6 @@
-const GRAPHQL_ENDPOINT = "http://localhost:8080/graphql";
+const GRAPHQL_ENDPOINT =
+  (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080") +
+  "/graphql";
 
 export async function fetchGraphQL<T>(
   query: string,
