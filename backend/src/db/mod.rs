@@ -15,7 +15,20 @@ pub async fn init_db(config: &SurrealConfig) -> anyhow::Result<Db> {
     // Open a connection as in user snippet
     let db = any::connect(&config.addr).await?;
 
-    // Select namespace and database (using notebooklm values if config is empty, or config values if provided)
+    // Authenticate FIRST (SurrealDB v3 SDK requires: connect → signin → use_ns/use_db)
+    if let Some(token) = &config.token {
+        db.authenticate(token).await?;
+        info!("Authenticated to SurrealDB using JWT token");
+    } else {
+        db.signin(Root {
+            username: config.user.clone(),
+            password: config.pass.clone(),
+        })
+        .await?;
+        info!("Signed in to SurrealDB as {}", config.user);
+    }
+
+    // Select namespace and database AFTER authentication
     let ns = if config.ns.is_empty() {
         "main"
     } else {
@@ -29,19 +42,6 @@ pub async fn init_db(config: &SurrealConfig) -> anyhow::Result<Db> {
 
     db.use_ns(ns).use_db(db_name).await?;
     info!("Using SurrealDB (ns={}, db={})", ns, db_name);
-
-    // Authenticate: Priority to Token if provided, else use credentials
-    if let Some(token) = &config.token {
-        db.authenticate(token).await?;
-        info!("Authenticated to SurrealDB using JWT token");
-    } else {
-        db.signin(Root {
-            username: config.user.clone(),
-            password: config.pass.clone(),
-        })
-        .await?;
-        info!("Signed in to SurrealDB as {}", config.user);
-    }
 
     // Optional: reset all tables (test/dev only). Set RESET_DB=1 to drop and recreate.
     if std::env::var("RESET_DB").as_deref() == Ok("1") {
