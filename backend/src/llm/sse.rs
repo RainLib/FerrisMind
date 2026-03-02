@@ -7,7 +7,6 @@ use crate::graph::router::ChatRouter;
 use crate::graph::suggest;
 use crate::graphql::types::SessionRecord;
 use crate::llm::manager::LlmManager;
-use std::time::Duration;
 use axum::{
     extract::Extension,
     response::sse::{Event, KeepAlive, Sse},
@@ -17,6 +16,7 @@ use futures::Stream;
 use serde::Deserialize;
 use std::convert::Infallible;
 use std::sync::Arc;
+use std::time::Duration;
 use surrealdb_types::ToSql;
 use tracing::info;
 
@@ -47,8 +47,8 @@ pub async fn chat_stream_handler(
     let notebook_id = input.notebook_id.clone();
 
     // Resolve session: explicit > most-recent > auto-create
-    let session_id = resolve_session(&db, &user_id, &notebook_id, input.session_id.as_deref())
-        .await?;
+    let session_id =
+        resolve_session(&db, &user_id, &notebook_id, input.session_id.as_deref()).await?;
 
     info!(
         "chat_stream: user={}, notebook={}, session={}",
@@ -101,7 +101,10 @@ pub async fn chat_stream_handler(
             }
         }
         Err(e) => {
-            tracing::error!("Failed to update session timestamp (transport error): {}", e);
+            tracing::error!(
+                "Failed to update session timestamp (transport error): {}",
+                e
+            );
         }
     }
 
@@ -217,23 +220,18 @@ pub async fn chat_stream_handler(
                     let _ = tx
                         .send(Ok(Event::default()
                             .event("suggestions")
-                            .data(
-                                serde_json::to_string(&suggested)
-                                    .unwrap_or_default(),
-                            )))
+                            .data(serde_json::to_string(&suggested).unwrap_or_default())))
                         .await;
                 }
 
                 let _ = tx
-                    .send(Ok(Event::default()
-                        .event("metadata")
-                        .data(
-                            serde_json::json!({
-                                "intent": result.intent,
-                                "notebook_id": nb_id_for_save,
-                            })
-                            .to_string(),
-                        )))
+                    .send(Ok(Event::default().event("metadata").data(
+                        serde_json::json!({
+                            "intent": result.intent,
+                            "notebook_id": nb_id_for_save,
+                        })
+                        .to_string(),
+                    )))
                     .await;
 
                 let _ = tx
@@ -341,4 +339,3 @@ async fn resolve_session(
     );
     Ok(session_id)
 }
-
