@@ -2,8 +2,9 @@ use async_graphql::{Context, ErrorExtensions, Object, Result};
 
 use crate::db::Db;
 use crate::error::AppError;
-use crate::graphql::guard::{check_notebook_access, get_current_user};
+use crate::graphql::guard::{check_notebook_access, decode_record_id, get_current_user};
 use crate::graphql::types::*;
+use surrealdb_types::ToSql;
 
 pub struct QueryRoot;
 
@@ -15,8 +16,8 @@ impl QueryRoot {
         let db = ctx.data::<Db>()?;
 
         let record: Option<UserRecord> = db
-            .query("SELECT * FROM type::thing($id)")
-            .bind(("id", &claims.sub))
+            .query("SELECT * FROM type::record($id)")
+            .bind(("id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -34,9 +35,9 @@ impl QueryRoot {
 
         let records: Vec<NotebookRecord> = db
             .query(
-                "SELECT out.* FROM has_access WHERE in = type::thing($user_id) AND out.is_deleted = false"
+                "SELECT out.id AS id, (out.name ?? '') AS name, out.description AS description, out.owner AS owner, (out.is_deleted ?? false) AS is_deleted, out.created_at AS created_at, out.updated_at AS updated_at FROM has_access WHERE in = type::record($user_id) AND out.is_deleted = false"
             )
-            .bind(("user_id", &claims.sub))
+            .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -49,15 +50,15 @@ impl QueryRoot {
     async fn notebook(&self, ctx: &Context<'_>, id: String) -> Result<Notebook> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let id = decode_record_id(&id);
 
-        // Check access
         check_notebook_access(db, &claims.sub, &id)
             .await
             .map_err(|e| e.extend())?;
 
         let record: Option<NotebookRecord> = db
-            .query("SELECT * FROM type::thing($id) WHERE is_deleted = false")
-            .bind(("id", &id))
+            .query("SELECT * FROM type::record($id) WHERE is_deleted = false")
+            .bind(("id", id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -72,14 +73,15 @@ impl QueryRoot {
     async fn documents(&self, ctx: &Context<'_>, notebook_id: String) -> Result<Vec<Document>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         check_notebook_access(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
         let records: Vec<DocumentRecord> = db
-            .query("SELECT * FROM document WHERE notebook = type::thing($notebook_id) ORDER BY created_at DESC")
-            .bind(("notebook_id", &notebook_id))
+            .query("SELECT * FROM document WHERE notebook = type::record($notebook_id) ORDER BY created_at DESC")
+            .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -88,19 +90,34 @@ impl QueryRoot {
         Ok(records.into_iter().map(Document::from).collect())
     }
 
-    /// List chat sessions in a notebook (with access check).
-    async fn sessions(&self, ctx: &Context<'_>, notebook_id: String) -> Result<Vec<Session>> {
+    /// List chat sessions in a notebook (with access check and pagination).
+    async fn sessions(
+        &self,
+        ctx: &Context<'_>,
+        notebook_id: String,
+        #[graphql(default = 20)] limit: i64,
+        #[graphql(default = 0)] offset: i64,
+    ) -> Result<Vec<Session>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         check_notebook_access(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
         let records: Vec<SessionRecord> = db
-            .query("SELECT * FROM session WHERE notebook = type::thing($notebook_id) AND user = type::thing($user_id) ORDER BY updated_at DESC")
-            .bind(("notebook_id", &notebook_id))
-            .bind(("user_id", &claims.sub))
+            .query(
+                "SELECT * FROM session \
+                 WHERE notebook = type::record($notebook_id) \
+                   AND user = type::record($user_id) \
+                 ORDER BY updated_at DESC \
+                 LIMIT $limit START $offset",
+            )
+            .bind(("notebook_id", notebook_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -109,21 +126,23 @@ impl QueryRoot {
         Ok(records.into_iter().map(Session::from).collect())
     }
 
-    /// List messages in a session.
+    /// List messages in a session (with offset pagination).
     async fn messages(
         &self,
         ctx: &Context<'_>,
         session_id: String,
         #[graphql(default = 50)] limit: i64,
+        #[graphql(default = 0)] offset: i64,
     ) -> Result<Vec<Message>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
 
-        // Verify session belongs to user
+        let session_id = decode_record_id(&session_id);
+
         let session: Option<SessionRecord> = db
-            .query("SELECT * FROM type::thing($session_id) WHERE user = type::thing($user_id)")
-            .bind(("session_id", &session_id))
-            .bind(("user_id", &claims.sub))
+            .query("SELECT * FROM type::record($session_id) WHERE user = type::record($user_id)")
+            .bind(("session_id", session_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -134,15 +153,201 @@ impl QueryRoot {
         }
 
         let records: Vec<MessageRecord> = db
-            .query("SELECT * FROM message WHERE session = type::thing($session_id) ORDER BY created_at ASC LIMIT $limit")
-            .bind(("session_id", &session_id))
+            .query(
+                "SELECT * FROM message \
+                 WHERE session = type::record($session_id) \
+                 ORDER BY created_at ASC \
+                 LIMIT $limit START $offset",
+            )
+            .bind(("session_id", session_id.clone()))
             .bind(("limit", limit))
+            .bind(("offset", offset))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
             .map_err(|e| AppError::Database(e.to_string()).extend())?;
 
         Ok(records.into_iter().map(Message::from).collect())
+    }
+
+    /// Get chat history for a notebook's most recent session (with offset pagination).
+    /// Automatically resolves the latest session for the user+notebook pair.
+    /// Returns paginated messages along with total count.
+    async fn notebook_chat_history(
+        &self,
+        ctx: &Context<'_>,
+        notebook_id: String,
+        #[graphql(default = 50)] limit: i64,
+        #[graphql(default = 0)] offset: i64,
+    ) -> Result<ChatHistoryPage> {
+        let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
+
+        check_notebook_access(db, &claims.sub, &notebook_id)
+            .await
+            .map_err(|e| e.extend())?;
+
+        // Find most recent session
+        let sessions: Vec<SessionRecord> = db
+            .query(
+                "SELECT * FROM session \
+                 WHERE notebook = type::record($notebook_id) \
+                   AND user = type::record($user_id) \
+                 ORDER BY updated_at DESC LIMIT 1",
+            )
+            .bind(("notebook_id", notebook_id.clone()))
+            .bind(("user_id", claims.sub.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let session = match sessions.first() {
+            Some(s) => s,
+            None => {
+                return Ok(ChatHistoryPage {
+                    session_id: String::new(),
+                    messages: vec![],
+                    total: 0,
+                    offset,
+                    limit,
+                    has_more: false,
+                });
+            }
+        };
+
+        let session_id = thing_to_string(&session.id);
+
+        // Total count
+        let count_result: Option<CountRow> = db
+            .query(
+                "SELECT count() AS total FROM message \
+                 WHERE session = type::record($session_id) GROUP ALL",
+            )
+            .bind(("session_id", session_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let total = count_result.map(|c| c.total).unwrap_or(0);
+
+        // Paginated messages
+        let records: Vec<MessageRecord> = db
+            .query(
+                "SELECT * FROM message \
+                 WHERE session = type::record($session_id) \
+                 ORDER BY created_at ASC \
+                 LIMIT $limit START $offset",
+            )
+            .bind(("session_id", session_id.clone()))
+            .bind(("limit", limit))
+            .bind(("offset", offset))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let messages: Vec<Message> = records.into_iter().map(Message::from).collect();
+        let has_more = (offset + limit) < total;
+
+        Ok(ChatHistoryPage {
+            session_id,
+            messages,
+            total,
+            offset,
+            limit,
+            has_more,
+        })
+    }
+
+    // ─── Document Content & Upload Status ───
+
+    /// Batch-poll upload statuses. Pass a list of document IDs and get back
+    /// their current processing state. Ideal for frontend progress bars.
+    async fn document_upload_statuses(
+        &self,
+        ctx: &Context<'_>,
+        ids: Vec<String>,
+    ) -> Result<Vec<DocumentUploadStatus>> {
+        let _claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut results = Vec::with_capacity(ids.len());
+        for raw_id in &ids {
+            let id = decode_record_id(raw_id);
+            let record: Option<DocumentRecord> = db
+                .query("SELECT * FROM type::record($id)")
+                .bind(("id", id.clone()))
+                .await
+                .map_err(|e| AppError::Database(e.to_string()).extend())?
+                .take(0)
+                .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+            if let Some(r) = record {
+                results.push(DocumentUploadStatus::from(r));
+            }
+        }
+
+        Ok(results)
+    }
+
+    /// Get the full parsed content (chunks + images) for a document.
+    async fn document_content(
+        &self,
+        ctx: &Context<'_>,
+        document_id: String,
+    ) -> Result<DocumentContent> {
+        let claims = get_current_user(ctx).map_err(|e| e.extend())?;
+        let db = ctx.data::<Db>()?;
+        let document_id = decode_record_id(&document_id);
+
+        let doc: Option<DocumentRecord> = db
+            .query("SELECT * FROM type::record($id)")
+            .bind(("id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        let doc =
+            doc.ok_or_else(|| AppError::NotFound("Document not found".to_string()).extend())?;
+
+        check_notebook_access(db, &claims.sub, &doc.notebook.to_sql())
+            .await
+            .map_err(|e| e.extend())?;
+
+        // Fetch chunks ordered by index
+        let chunks: Vec<ChunkRecord> = db
+            .query("SELECT * FROM chunk WHERE document = type::record($doc_id) ORDER BY chunk_index ASC")
+            .bind(("doc_id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        // Fetch images
+        let images: Vec<DocImageRecord> = db
+            .query("SELECT * FROM doc_image WHERE document = type::record($doc_id)")
+            .bind(("doc_id", document_id.clone()))
+            .await
+            .map_err(|e| AppError::Database(e.to_string()).extend())?
+            .take(0)
+            .map_err(|e| AppError::Database(e.to_string()).extend())?;
+
+        Ok(DocumentContent {
+            document_id: document_id.clone(),
+            filename: doc.filename,
+            upload_status: doc.upload_status,
+            summary: doc.summary,
+            chunks: chunks.into_iter().map(DocumentChunk::from).collect(),
+            images: images.into_iter().map(DocumentImage::from).collect(),
+        })
     }
 
     /// List members of a notebook (with access check).
@@ -153,15 +358,16 @@ impl QueryRoot {
     ) -> Result<Vec<NotebookMember>> {
         let claims = get_current_user(ctx).map_err(|e| e.extend())?;
         let db = ctx.data::<Db>()?;
+        let notebook_id = decode_record_id(&notebook_id);
 
         check_notebook_access(db, &claims.sub, &notebook_id)
             .await
             .map_err(|e| e.extend())?;
 
-        // Query all access relations for this notebook, fetching user data
+        // Query all access relations for this notebook (no FETCH so in/out stay as record IDs)
         let records: Vec<AccessRecord> = db
-            .query("SELECT * FROM has_access WHERE out = type::thing($notebook_id) FETCH in")
-            .bind(("notebook_id", &notebook_id))
+            .query("SELECT * FROM has_access WHERE out = type::record($notebook_id)")
+            .bind(("notebook_id", notebook_id.clone()))
             .await
             .map_err(|e| AppError::Database(e.to_string()).extend())?
             .take(0)
@@ -169,9 +375,13 @@ impl QueryRoot {
 
         let mut members = Vec::new();
         for record in records {
+            let user_id = match &record.r#in {
+                Some(r) => r.to_sql(),
+                None => continue,
+            };
             let user_record: Option<UserRecord> = db
-                .query("SELECT * FROM type::thing($user_id)")
-                .bind(("user_id", record.r#in.to_string()))
+                .query("SELECT * FROM type::record($user_id)")
+                .bind(("user_id", user_id))
                 .await
                 .map_err(|e| AppError::Database(e.to_string()).extend())?
                 .take(0)

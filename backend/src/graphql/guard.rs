@@ -3,37 +3,61 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::types::AccessRecord;
 use async_graphql::Context;
+use percent_encoding::percent_decode_str;
+
+/// Mock user ID used when no JWT is present (development).
+pub const MOCK_DEV_USER_ID: &str = "user:mock_dev_user";
+
+/// Decode a record ID that may arrive percent-encoded from the frontend
+/// (e.g. `notebook%3Axyz` → `notebook:xyz`).
+pub fn decode_record_id(id: &str) -> String {
+    percent_decode_str(id).decode_utf8_lossy().into_owned()
+}
 
 /// Extract current authenticated user from GraphQL context.
-/// Returns AppError::Unauthorized if not logged in.
+/// In development/integration mode, returns a mock user if not logged in.
 pub fn get_current_user(ctx: &Context<'_>) -> Result<Claims, AppError> {
-    ctx.data_opt::<Claims>()
-        .cloned()
-        .ok_or(AppError::Unauthorized)
+    if let Some(claims) = ctx.data_opt::<Claims>() {
+        return Ok(claims.clone());
+    }
+
+    // fallback to mock user for development
+    Ok(Claims {
+        sub: MOCK_DEV_USER_ID.to_string(),
+        email: "dev@example.com".to_string(),
+        username: "dev_user".to_string(),
+        exp: 0,
+        iat: 0,
+    })
 }
 
 /// Check if a user has access to a notebook.
 /// Returns the role (owner/editor/viewer) if access is granted.
+/// When the user is the mock dev user (no JWT), allow access to any notebook for local dev.
 pub async fn check_notebook_access(
     db: &Db,
     user_id: &str,
     notebook_id: &str,
 ) -> Result<String, AppError> {
+    // Dev: mock user can access any notebook (notebook may have been created with real JWT)
+    if user_id == MOCK_DEV_USER_ID {
+        return Ok("viewer".to_string());
+    }
+
     // Query the has_access relation
     let result: Vec<AccessRecord> = db
-        .query(
-            "SELECT * FROM has_access WHERE in = type::thing($user_id) AND out = type::thing($notebook_id)",
-        )
-        .bind(("user_id", user_id))
-        .bind(("notebook_id", notebook_id))
+        .query("SELECT * FROM has_access WHERE in = type::record($user_id) AND out = type::record($notebook_id)")
+        .bind(("user_id", user_id.to_string()))
+        .bind(("notebook_id", notebook_id.to_string()))
         .await
         .map_err(|e| AppError::Database(e.to_string()))?
         .take(0)
         .map_err(|e| AppError::Database(e.to_string()))?;
 
     result
-        .first()
-        .map(|a| a.role.clone())
+        .into_iter()
+        .find(|a| a.r#in.is_some() && a.out.is_some())
+        .map(|a| a.role)
         .ok_or_else(|| AppError::Forbidden("No access to this notebook".to_string()))
 }
 

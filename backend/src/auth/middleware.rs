@@ -1,6 +1,11 @@
-use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
+use axum::{
+    extract::{FromRequestParts, Request},
+    http::request::Parts,
+    middleware::Next,
+    response::Response,
+};
 
-use crate::auth::jwt::{Claims, verify_token};
+use crate::auth::jwt::{verify_token, Claims};
 use crate::config::JwtConfig;
 
 /// Extract authenticated user from request headers.
@@ -23,4 +28,21 @@ pub async fn auth_middleware(mut req: Request, next: Next) -> Response {
     }
 
     next.run(req).await
+}
+
+/// Extractor that reads optional Claims from request extensions (set by auth_middleware).
+/// Does not consume the request body, so it can be used together with GraphQLRequest.
+#[derive(Clone)]
+pub struct OptionalAuth(pub Option<Claims>);
+
+impl<S> FromRequestParts<S> for OptionalAuth
+where
+    S: Send + Sync,
+{
+    type Rejection = std::convert::Infallible;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let claims = parts.extensions.get::<Claims>().cloned();
+        Ok(OptionalAuth(claims))
+    }
 }
