@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use tokio::sync::mpsc;
 
-use crate::graph::kg_search::KgHit;
-
 /// Channel sender for pushing SSE stage events back to the client.
 pub type StageSender = mpsc::Sender<Result<Event, Infallible>>;
 
@@ -89,11 +87,6 @@ pub struct ChatFlowData {
     pub chat_history: Vec<ChatMessage>,
     /// Whether the notebook has any completed source documents.
     pub has_sources: bool,
-
-    // ── Knowledge Graph search results ──
-    pub kg_hits: Vec<KgHit>,
-    /// Pre-formatted KG context string ready for LLM prompts.
-    pub kg_context: String,
 
     // ── Ask-specific ──
     pub search_strategy: Option<SearchStrategy>,

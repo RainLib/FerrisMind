@@ -5,8 +5,8 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::Serialize;
 use percent_encoding::percent_decode_str;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use tracing::{error, info};
 
@@ -23,6 +23,7 @@ pub struct UploadResponse {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UploadedDoc {
     pub id: String,
     pub filename: String,
@@ -82,18 +83,13 @@ pub async fn upload_handler(
                     }),
                 )
             })?;
-            let decoded = percent_decode_str(&text)
-                .decode_utf8_lossy()
-                .into_owned();
+            let decoded = percent_decode_str(&text).decode_utf8_lossy().into_owned();
             notebook_id = Some(decoded);
             continue;
         }
 
         if name == "files" || name == "file" {
-            let filename = field
-                .file_name()
-                .unwrap_or("unnamed")
-                .to_string();
+            let filename = field.file_name().unwrap_or("unnamed").to_string();
             let content_type = mime_guess::from_path(&filename)
                 .first_or_octet_stream()
                 .to_string();
@@ -180,8 +176,8 @@ pub async fn upload_handler(
 
         let doc_id = doc.id.as_ref().map(|t| t.to_sql()).unwrap_or_default();
         let sanitized_id = doc_id.replace(':', "_").replace('/', "_");
-        let file_path = std::path::Path::new(&upload_dir)
-            .join(format!("{}_{}", sanitized_id, filename));
+        let file_path =
+            std::path::Path::new(&upload_dir).join(format!("{}_{}", sanitized_id, filename));
 
         // Write file to disk
         tokio::fs::write(&file_path, &data).await.map_err(|e| {
@@ -211,8 +207,11 @@ pub async fn upload_handler(
         });
 
         // Spawn async ingestion
-        let ingest_service =
-            Arc::new(IngestionService::new(db.clone(), llm.clone(), &ingest_config));
+        let ingest_service = Arc::new(IngestionService::new(
+            db.clone(),
+            llm.clone(),
+            &ingest_config,
+        ));
         tokio::spawn(async move {
             ingest_service.process_document(doc_id).await;
         });

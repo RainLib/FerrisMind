@@ -27,6 +27,7 @@ pub struct UploadUrlResponse {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UploadedUrlDoc {
     pub id: String,
     pub url: String,

@@ -1,6 +1,5 @@
 use crate::db::Db;
 use crate::graph::context::{emit_stage, ChatFlowData, ChatMessage, SearchHit, StageSender};
-use crate::graph::kg_search::{kg_hits_to_context, KgSearcher};
 use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
@@ -125,57 +124,6 @@ struct MsgRow {
     role: String,
     content: String,
     created_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-// ─── Task 1b: KG search ───
-
-pub struct ChatKgSearchTask {
-    pub db: Db,
-    pub tx: StageSender,
-}
-
-#[async_trait]
-impl Task for ChatKgSearchTask {
-    fn id(&self) -> &str {
-        "ChatKgSearchTask"
-    }
-
-    async fn run(&self, ctx: Context) -> Result<TaskResult, GraphError> {
-        let mut data = ctx.get::<ChatFlowData>("data").await.unwrap_or_default();
-
-        if !data.has_sources {
-            ctx.set("data", data).await;
-            return Ok(TaskResult::new(
-                Some("No sources — skipped KG search".to_string()),
-                NextAction::ContinueAndExecute,
-            ));
-        }
-
-        emit_stage(
-            &self.tx,
-            "chat_kg_search",
-            "Searching knowledge graph...",
-            35,
-        )
-        .await;
-
-        let terms_owned = KgSearcher::extract_terms(&data.message);
-        let terms: Vec<&str> = terms_owned.iter().map(|s| s.as_str()).collect();
-
-        if !terms.is_empty() {
-            let searcher = KgSearcher::new(self.db.clone());
-            let hits = searcher.search_with_expand(&data.notebook_id, &terms).await;
-            info!("ChatKgSearchTask: {} KG hits", hits.len());
-            data.kg_context = kg_hits_to_context(&hits);
-            data.kg_hits = hits;
-        }
-
-        ctx.set("data", data).await;
-        Ok(TaskResult::new(
-            Some("KG search completed".to_string()),
-            NextAction::ContinueAndExecute,
-        ))
-    }
 }
 
 // ─── Task 2: Lightweight vector search using user's message ───
@@ -329,7 +277,6 @@ impl Task for ChatResponseTask {
         vars.insert("context".to_string(), history_str);
         vars.insert("has_sources".to_string(), data.has_sources.to_string());
         vars.insert("search_results".to_string(), search_context);
-        vars.insert("kg_context".to_string(), data.kg_context.clone());
 
         let system_prompt = self
             .llm
@@ -378,10 +325,6 @@ impl ChatGraphRunner {
                     db: self.db.clone(),
                     tx: tx.clone(),
                 }))
-                .add_task(Arc::new(ChatKgSearchTask {
-                    db: self.db.clone(),
-                    tx: tx.clone(),
-                }))
                 .add_task(Arc::new(ChatSearchTask {
                     db: self.db.clone(),
                     llm: self.llm.clone(),
@@ -391,8 +334,7 @@ impl ChatGraphRunner {
                     llm: self.llm.clone(),
                     tx: tx.clone(),
                 }))
-                .add_edge("ChatContextTask", "ChatKgSearchTask")
-                .add_edge("ChatKgSearchTask", "ChatSearchTask")
+                .add_edge("ChatContextTask", "ChatSearchTask")
                 .add_edge("ChatSearchTask", "ChatResponseTask")
                 .set_start_task("ChatContextTask")
                 .build(),

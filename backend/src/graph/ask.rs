@@ -2,7 +2,6 @@ use crate::db::Db;
 use crate::graph::context::{
     emit_stage, ChatFlowData, SearchHit, SearchStrategy, StageSender, SubAnswer,
 };
-use crate::graph::kg_search::{kg_hits_to_context, KgSearcher};
 use crate::llm::manager::LlmManager;
 use async_trait::async_trait;
 use graph_flow::{
@@ -201,65 +200,6 @@ struct ChunkSearchRow {
     pub score: f64,
 }
 
-// ─── Task 2b: KG search (inserted between AskSearchTask and AskQueryProcessTask) ───
-
-pub struct AskKgSearchTask {
-    pub db: Db,
-    pub tx: StageSender,
-}
-
-#[async_trait]
-impl Task for AskKgSearchTask {
-    fn id(&self) -> &str {
-        "AskKgSearchTask"
-    }
-
-    async fn run(&self, ctx: Context) -> Result<TaskResult, GraphError> {
-        let mut data = ctx.get::<ChatFlowData>("data").await.unwrap_or_default();
-
-        emit_stage(&self.tx, "ask_kg_search", "Knowledge graph lookup...", 52).await;
-
-        // Gather search terms from the planned strategy
-        let all_terms: Vec<String> = data
-            .search_strategy
-            .as_ref()
-            .map(|s| s.searches.iter().map(|q| q.term.clone()).collect())
-            .unwrap_or_default();
-
-        let terms: Vec<&str> = all_terms.iter().map(|s| s.as_str()).collect();
-
-        if !terms.is_empty() {
-            let searcher = KgSearcher::new(self.db.clone());
-            let hits = searcher.search_with_expand(&data.notebook_id, &terms).await;
-            info!("AskKgSearchTask: {} KG hits", hits.len());
-
-            // Merge KG chunk ids into search_results so downstream tasks surface them
-            for hit in &hits {
-                if let Some(ref chunk_id) = hit.chunk_id {
-                    // Avoid duplicates
-                    if !data.search_results.iter().any(|r| &r.chunk_id == chunk_id) {
-                        data.search_results.push(SearchHit {
-                            chunk_id: chunk_id.clone(),
-                            document_id: String::new(), // will be filled by query if needed
-                            content: format!("[KG] {} ({})", hit.label, hit.entity_type),
-                            score: 0.7, // nominal KG score
-                        });
-                    }
-                }
-            }
-
-            data.kg_context = kg_hits_to_context(&hits);
-            data.kg_hits = hits;
-        }
-
-        ctx.set("data", data).await;
-        Ok(TaskResult::new(
-            Some("Ask KG search done".to_string()),
-            NextAction::ContinueAndExecute,
-        ))
-    }
-}
-
 // ─── Task 3: QueryProcess — process each search term's results ───
 
 pub struct AskQueryProcessTask {
@@ -308,7 +248,6 @@ impl Task for AskQueryProcessTask {
             vars.insert("instructions".to_string(), query.instructions.clone());
             vars.insert("results".to_string(), results_text);
             vars.insert("ids".to_string(), ids_text.clone());
-            vars.insert("kg_context".to_string(), data.kg_context.clone());
 
             let prompt_text = self
                 .llm
@@ -442,10 +381,6 @@ impl AskGraphRunner {
                     llm: self.llm.clone(),
                     tx: tx.clone(),
                 }))
-                .add_task(Arc::new(AskKgSearchTask {
-                    db: self.db.clone(),
-                    tx: tx.clone(),
-                }))
                 .add_task(Arc::new(AskQueryProcessTask {
                     llm: self.llm.clone(),
                     tx: tx.clone(),
@@ -455,8 +390,7 @@ impl AskGraphRunner {
                     tx: tx.clone(),
                 }))
                 .add_edge("AskEntryTask", "AskSearchTask")
-                .add_edge("AskSearchTask", "AskKgSearchTask")
-                .add_edge("AskKgSearchTask", "AskQueryProcessTask")
+                .add_edge("AskSearchTask", "AskQueryProcessTask")
                 .add_edge("AskQueryProcessTask", "AskFinalAnswerTask")
                 .set_start_task("AskEntryTask")
                 .build(),

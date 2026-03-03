@@ -1,51 +1,72 @@
 use std::collections::HashMap;
-use std::path::Path;
 use tera::{Context, Tera};
-use tracing::{info, warn};
+use tracing::info;
 
-/// A prompt manager that uses the Tera template engine for Jinja-style templates.
+/// A prompt manager that embeds all templates at compile time via `include_str!`
+/// and uses Tera for Jinja-style rendering.
 pub struct PromptManager {
     tera: Tera,
 }
 
 impl PromptManager {
-    /// Create a new PromptManager and load templates from the given directory
-    pub fn new<P: AsRef<Path>>(prompts_dir: P) -> Self {
-        let path = prompts_dir.as_ref();
-
-        // If the given path doesn't exist, try common fallbacks
-        let resolved = if path.exists() {
-            path.to_path_buf()
-        } else if Path::new("backend").join(path).exists() {
-            Path::new("backend").join(path)
-        } else {
-            path.to_path_buf()
-        };
-
-        let glob = format!("{}/**/*", resolved.to_string_lossy());
-
-        // Initialize Tera with the prompts directory
-        let mut tera = match Tera::new(&glob) {
-            Ok(t) => {
-                info!("Loaded prompt templates from {:?}", path);
-                t
-            }
-            Err(e) => {
-                warn!(
-                    "Failed to initialize Tera with directory {:?}: {}. Falling back to empty.",
-                    path, e
-                );
-                Tera::default()
-            }
-        };
-
-        // Disable escaping for text prompts (LLM prompts are typically plain text)
+    /// Create a new PromptManager with all templates compiled into the binary.
+    pub fn new<P: AsRef<std::path::Path>>(_prompts_dir: P) -> Self {
+        let mut tera = Tera::default();
         tera.autoescape_on(vec![]);
+
+        // All templates are embedded at compile time — no runtime file I/O.
+        let templates: &[(&str, &str)] = &[
+            (
+                "chat/system.jinja",
+                include_str!("../../prompts/chat/system.jinja"),
+            ),
+            (
+                "ask/entry.jinja",
+                include_str!("../../prompts/ask/entry.jinja"),
+            ),
+            (
+                "ask/query_process.jinja",
+                include_str!("../../prompts/ask/query_process.jinja"),
+            ),
+            (
+                "ask/final_answer.jinja",
+                include_str!("../../prompts/ask/final_answer.jinja"),
+            ),
+            (
+                "intent/classify.jinja",
+                include_str!("../../prompts/intent/classify.jinja"),
+            ),
+            (
+                "source_chat/system.jinja",
+                include_str!("../../prompts/source_chat/system.jinja"),
+            ),
+            (
+                "suggest/system.jinja",
+                include_str!("../../prompts/suggest/system.jinja"),
+            ),
+            (
+                "suggest/from_question.jinja",
+                include_str!("../../prompts/suggest/from_question.jinja"),
+            ),
+        ];
+
+        for (name, content) in templates {
+            if let Err(e) = tera.add_raw_template(name, content) {
+                panic!("Failed to register inline template '{}': {}", name, e);
+            }
+        }
+
+        let names: Vec<&str> = tera.get_template_names().collect();
+        info!(
+            "Loaded {} inline prompt templates: {:?}",
+            names.len(),
+            names
+        );
 
         Self { tera }
     }
 
-    /// Render a template by name with provided variables
+    /// Render a template by name with provided variables.
     pub fn render(
         &self,
         template_name: &str,
@@ -56,8 +77,7 @@ impl PromptManager {
             context.insert(key, value);
         }
 
-        // Tera templates usually include the extension if the glob matched them
-        // We'll try common extensions or the exact name
+        // Try exact name first, then with .jinja suffix
         let possible_names = [
             template_name.to_string(),
             format!("{}.jinja", template_name),
@@ -78,7 +98,7 @@ impl PromptManager {
         ))
     }
 
-    /// Render a raw string template with provided variables
+    /// Render a raw string template with provided variables.
     pub fn render_raw(
         template: &str,
         variables: &HashMap<String, String>,
@@ -87,7 +107,6 @@ impl PromptManager {
         for (key, value) in variables {
             context.insert(key, value);
         }
-
         Tera::one_off(template, &context, false).map_err(|e| anyhow::anyhow!(e))
     }
 }
@@ -112,23 +131,20 @@ mod tests {
     }
 
     #[test]
-    fn test_conditional_render() {
+    fn test_inline_templates_loaded() {
+        let pm = PromptManager::new("prompts");
         let mut vars = HashMap::new();
-        vars.insert("show".to_string(), "true".to_string());
+        vars.insert("notebook".to_string(), "Test Notebook".to_string());
+        vars.insert("has_sources".to_string(), "true".to_string());
+        vars.insert("search_results".to_string(), String::new());
+        vars.insert("context".to_string(), String::new());
 
-        let template = "{% if show == 'true' %}Visible{% else %}Hidden{% endif %}";
-        let rendered = PromptManager::render_raw(template, &vars).unwrap();
-        assert_eq!(rendered, "Visible");
-
-        vars.insert("show".to_string(), "false".to_string());
-        let rendered = PromptManager::render_raw(template, &vars).unwrap();
-        assert_eq!(rendered, "Hidden");
-    }
-
-    #[test]
-    fn test_base_path_resolution() {
-        // This is more of a documentation test.
-        // If we have "prompts/source_chat/system.jinja", Tera names it "source_chat/system.jinja"
-        // so render("source_chat/system") should work.
+        // Should not panic or error
+        let result = pm.render("chat/system", &vars);
+        assert!(
+            result.is_ok(),
+            "chat/system render failed: {:?}",
+            result.err()
+        );
     }
 }

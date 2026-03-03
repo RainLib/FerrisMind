@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use bytes::Bytes;
@@ -10,7 +9,6 @@ use crate::db::Db;
 use crate::error::AppError;
 use crate::graphql::types::DocumentRecord;
 use crate::ingest::chunker::ChunkConfig;
-use crate::ingest::kg_extractor::KgExtractor;
 use crate::ingest::parser::{ExtractedImage, IngestFile, ParserRegistry};
 use crate::ingest::pipeline::{EmbeddedChunk, EmbeddingProvider, IngestPipeline, IngestStreamItem};
 use crate::llm::manager::LlmManager;
@@ -42,7 +40,6 @@ impl EmbeddingProvider for RigEmbeddingProvider {
 pub struct IngestionService {
     db: Db,
     pipeline: Arc<IngestPipeline>,
-    kg_extractor: Arc<KgExtractor>,
 }
 
 impl IngestionService {
@@ -55,13 +52,7 @@ impl IngestionService {
                 .with_batch_size(config.embed_batch_size),
         );
 
-        let kg_extractor = Arc::new(KgExtractor::new(db.clone(), llm));
-
-        Self {
-            db,
-            pipeline,
-            kg_extractor,
-        }
+        Self { db, pipeline }
     }
 
     /// Main entry point: read file → compute sha256 → dedup → parse → chunk → embed → store.
@@ -135,10 +126,6 @@ impl IngestionService {
         let notebook_id = doc.notebook.to_sql();
         let doc_id_sql = doc.id.as_ref().map(|t| t.to_sql()).unwrap_or_default();
         let mut chunk_count: i64 = 0;
-        // chunk_index → stored SurrealDB chunk record id (for KG entity linking)
-        let mut chunk_id_map: HashMap<usize, String> = HashMap::new();
-        // accumulate full article text
-        let mut full_text = String::new();
 
         let mut stream = self.pipeline.ingest_stream(&ingest_file);
         while let Some(result) = stream.next().await {
@@ -158,14 +145,8 @@ impl IngestionService {
                 }
                 Ok(IngestStreamItem::Chunk(embedded)) => {
                     let chunk_idx = embedded.chunk.index;
-                    let chunk_content = embedded.chunk.content.clone();
                     match self.store_chunk(&embedded, &doc_id_sql, &notebook_id).await {
-                        Ok(stored_id) => {
-                            chunk_id_map.insert(chunk_idx, stored_id);
-                            if !full_text.is_empty() {
-                                full_text.push_str("\n\n");
-                            }
-                            full_text.push_str(&chunk_content);
+                        Ok(_) => {
                             chunk_count += 1;
                         }
                         Err(e) => {
@@ -180,19 +161,6 @@ impl IngestionService {
                 }
             }
         }
-
-        // ──── KG extraction (full article, token-windowed) ────
-        let kg = self.kg_extractor.clone();
-        let doc_id_for_kg = doc_id_sql.clone();
-        let nb_id_for_kg = notebook_id.clone();
-        tokio::spawn(async move {
-            if let Err(e) = kg
-                .extract_and_store(&doc_id_for_kg, &nb_id_for_kg, &full_text, &chunk_id_map)
-                .await
-            {
-                warn!("KG extraction failed for {}: {}", doc_id_for_kg, e);
-            }
-        });
 
         // Finalize
         if let Err(e) = self
