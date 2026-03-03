@@ -61,10 +61,10 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // Set up CORS
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    // let cors = CorsLayer::new()
+    //     .allow_origin(Any)
+    //     .allow_methods(Any)
+    //     .allow_headers(Any);
 
     // Build Axum Router
     let app = Router::new()
@@ -86,8 +86,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(config.ingest.clone()))
         .layer(Extension(db.clone()))
         .layer(Extension(llm_manager))
-        .layer(TraceLayer::new_for_http())
-        .layer(cors);
+        .layer(TraceLayer::new_for_http());
+    // .layer(cors);
 
     // Start server
     let addr = format!("{}:{}", config.server.host, config.server.port);
